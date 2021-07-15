@@ -8,30 +8,12 @@ import {
   Input,
   Text,
 } from "@chakra-ui/react"
+import { nanoid } from "nanoid"
 import Peer from "peerjs"
 import React, { useEffect, useState } from "react"
-import { v4 as uuidv4 } from "uuid"
 
 function App() {
-  const [myPeer, setMyPeer] = useState<Peer | null>(null)
-  const [peers, setPeers] = useState<Peer[]>([])
-
-  useEffect(() => {
-    const peer = new Peer(uuidv4())
-    setMyPeer(peer)
-  }, [])
-
-  useEffect(() => {
-    if (!myPeer) return
-
-    myPeer.on("connection", (conn) => {
-      conn.on("data", (data) => {
-        console.log(data)
-      })
-    })
-
-    return myPeer?.destroy
-  }, [myPeer])
+  const { myPeer, connections, handleCalleeConnection } = usePeerConnections()
 
   return (
     <Box
@@ -41,38 +23,118 @@ function App() {
       color="white"
       textAlign="center"
     >
-      <Heading pt="1rem">Hello world!</Heading>
+      <Heading pt="1rem">PeerJS-React Template</Heading>
       {myPeer && <Text>Peer: {myPeer.id}</Text>}
 
       <Center>
         <Box width="sm" mt="5rem">
-          <form
-            action=""
-            onSubmit={(e) => {
-              e.preventDefault()
-              const toConnectId = (e.target as any)["peer-id"].value as string
-              if (!myPeer || !toConnectId) return
-              const conn = myPeer.connect(toConnectId)
-
-              conn.on("open", () => {
-                conn.send("Hello there!")
-              })
-            }}
-          >
-            <FormControl id="peer-id">
-              <Input type="text" />
-              <FormHelperText color="white">
-                Enter a peer's ID and connect!
-              </FormHelperText>
-              <Button type="submit" colorScheme="telegram" mt="1rem">
-                Connect
-              </Button>
-            </FormControl>
-          </form>
+          <PeerConnectForm
+            myPeer={myPeer}
+            handleConnection={handleCalleeConnection}
+          />
+          {connections.length > 0 && (
+            <Button
+              variant="outline"
+              colorScheme="telegram"
+              mt="1rem"
+              onClick={() => {
+                connections.forEach((conn) => {
+                  conn.send(JSON.stringify({ message: "SPAM" }))
+                })
+              }}
+            >
+              Send Data
+            </Button>
+          )}
         </Box>
       </Center>
     </Box>
   )
 }
 
+interface IConnectFormProps {
+  myPeer: Peer | null
+  handleConnection: HandleConnectionCallback
+}
+const PeerConnectForm = ({ myPeer, handleConnection }: IConnectFormProps) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const toConnectId = (e.target as HTMLFormElement)["peer-id"].value as string
+    const isMyPeer = toConnectId === myPeer?.id
+    const doStop = !myPeer || !toConnectId || isMyPeer
+    if (doStop) return
+    connectToPeer(myPeer!, toConnectId, handleConnection)
+  }
+
+  return (
+    <form action="" onSubmit={handleSubmit}>
+      <FormControl id="peer-id">
+        <Input type="text" />
+        <FormHelperText color="white">
+          Enter a peer's ID and connect!
+        </FormHelperText>
+        <Button type="submit" colorScheme="telegram" mt="1rem">
+          Connect
+        </Button>
+      </FormControl>
+    </form>
+  )
+}
+
+const usePeerConnections = () => {
+  const [myPeer, setMyPeer] = useState<Peer | null>(null)
+  useEffect(() => {
+    const peer = new Peer(nanoid(10))
+    listenForConnections(peer, _handleCallerConnection)
+    setMyPeer(peer)
+
+    return myPeer?.destroy
+  }, [])
+
+  const [connections, setConnections] = useState<Peer.DataConnection[]>([])
+  const addConnection = (conn: Peer.DataConnection) =>
+    setConnections(connections.concat(conn))
+
+  // A caller connected to this this callee
+  const _handleCallerConnection: HandleConnectionCallback = (conn) => {
+    conn.on("open", () => {
+      addConnection(conn)
+      console.log(`Connected with ${conn.peer}`)
+    })
+    conn.on("data", (data) => {
+      console.log(`[${conn.peer}]: ${data}`)
+    })
+    conn.on("error", console.error)
+  }
+
+  // A callee connected to this caller
+  const handleCalleeConnection: HandleConnectionCallback = (conn) => {
+    conn.on("open", () => {
+      addConnection(conn)
+      console.log(`Connected with ${conn.peer}`)
+    })
+    conn.on("data", (data) => {
+      console.log(`[${conn.peer}]: ${data}`)
+    })
+    conn.on("error", console.error)
+  }
+
+  return { myPeer, connections, handleCalleeConnection }
+}
+
+const listenForConnections = (
+  callee: Peer,
+  handleConnection: HandleConnectionCallback,
+) => callee.on("connection", handleConnection)
+
+const connectToPeer = (
+  caller: Peer,
+  toConnectId: string,
+  handleConnection: HandleConnectionCallback,
+) => {
+  const conn = caller.connect(toConnectId)
+  handleConnection(conn)
+}
+
+type HandleConnectionCallback = (conn: Peer.DataConnection) => void
 export default App
