@@ -3,27 +3,39 @@ import {
   Button,
   Flex,
   FormControl,
-  FormHelperText,
   Heading,
+  HStack,
   Input,
   Table,
   Tbody,
   Td,
-  Text,
   Th,
   Thead,
+  Tooltip,
   Tr,
+  useToast,
 } from "@chakra-ui/react"
 import { nanoid } from "nanoid"
 import Peer from "peerjs"
 import React, { useEffect, useRef, useState } from "react"
 
 function App() {
-  const { myPeer, connections, handleConnection, hasPeer } =
-    usePeerConnections()
+  const {
+    connections,
+    connectToPeer,
+    disconnect,
+    hasPeer,
+    initMyPeer,
+    myPeer,
+  } = usePeerConnections()
   const handleConnectFormSubmit = (toConnectId: string) => {
     if (hasPeer(toConnectId)) return
-    connectToPeer(myPeer!, toConnectId, handleConnection)
+    connectToPeer(toConnectId)
+  }
+  const hasPeers = connections.length > 0
+
+  if (myPeer && !myPeer.id) {
+    window.location.reload()
   }
 
   return (
@@ -35,58 +47,34 @@ function App() {
       textAlign="center"
     >
       <Heading pt="1rem">PeerJS-React Template</Heading>
-      {myPeer && <Text>Peer: {myPeer.id}</Text>}
-
-      <Flex flexDirection="column" alignItems="center" justifyContent="center">
-        <Box width="sm" mt="5rem">
-          <PeerConnectForm handleSubmit={handleConnectFormSubmit} />
-        </Box>
-        {connections.length > 0 && (
-          <Button
-            variant="outline"
-            colorScheme="telegram"
-            mt="1rem"
-            onClick={() => {
-              connections.forEach((conn) => {
-                conn.send(JSON.stringify({ message: "SPAM" }))
-              })
-            }}
-          >
-            Send Data
+      <HStack
+        flexDirection="row"
+        alignItems="center"
+        justifyContent="center"
+        mt="1rem"
+      >
+        {myPeer && myPeer.id && <CopyMyIDInput myId={myPeer.id} />}
+        {!hasPeers && (
+          <Button colorScheme="yellow" onClick={initMyPeer}>
+            New ID
           </Button>
         )}
+      </HStack>
+
+      <Flex
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        mt="1rem"
+      >
+        <PeerConnectForm
+          handleSubmit={handleConnectFormSubmit}
+          doShowDisconnect={hasPeers}
+          disconnect={disconnect}
+        />
         <Box width="lg" mt="1rem">
           {myPeer && (
-            <Table
-              size="md"
-              variant="striped"
-              color="black"
-              colorScheme="teal"
-              bg="white"
-              rounded="md"
-            >
-              <Thead>
-                <Tr>
-                  <Th>ID</Th>
-                  <Th>Name</Th>
-                  <Th>Data</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                <Tr>
-                  <Td>{myPeer.id}</Td>
-                  <Td>My Name</Td>
-                  <Td>"Doot doot"</Td>
-                </Tr>
-                {connections.map((conn) => (
-                  <Tr key={conn.peer}>
-                    <Td>{conn.peer}</Td>
-                    <Td>Peer Name</Td>
-                    <Td>"Beep boop"</Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
+            <ConnectionsTable myPeerId={myPeer.id} connections={connections} />
           )}
         </Box>
       </Flex>
@@ -94,10 +82,85 @@ function App() {
   )
 }
 
+const ConnectionsTable = (props: {
+  myPeerId: string
+  connections: Peer.DataConnection[]
+}) => {
+  const { connections, myPeerId } = props
+
+  return (
+    <Table
+      size="md"
+      variant="striped"
+      color="black"
+      colorScheme="teal"
+      bg="white"
+      rounded="md"
+    >
+      <Thead>
+        <Tr>
+          <Th>ID</Th>
+          <Th>Name</Th>
+          <Th>Data</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        <Tr>
+          <Td>{myPeerId}</Td>
+          <Td>My Name</Td>
+          <Td>"Doot doot"</Td>
+        </Tr>
+        {connections.map((conn) => (
+          <Tr key={conn.peer}>
+            <Td>{conn.peer}</Td>
+            <Td>Peer Name</Td>
+            <Td>"Beep boop"</Td>
+          </Tr>
+        ))}
+      </Tbody>
+    </Table>
+  )
+}
+
+const CopyMyIDInput = (props: { myId: string }) => {
+  const { myId } = props
+  const toast = useToast()
+
+  const handleCopy = (e: React.MouseEvent<HTMLInputElement, MouseEvent>) => {
+    e.currentTarget.select()
+    document.execCommand("copy")
+    toast({
+      title: "Copied ID to clipboard!",
+      status: "success",
+      duration: 1000,
+      isClosable: true,
+      position: "top-right",
+    })
+  }
+
+  return (
+    <Tooltip label="Click to copy!" placement="right">
+      <Input
+        ml="1rem"
+        value={myId}
+        width="auto"
+        onClick={handleCopy}
+        readOnly
+      />
+    </Tooltip>
+  )
+}
+
 interface IConnectFormProps {
   handleSubmit: (toConnectId: string) => void
+  doShowDisconnect: boolean
+  disconnect: () => void
 }
-const PeerConnectForm = ({ handleSubmit }: IConnectFormProps) => {
+const PeerConnectForm = ({
+  handleSubmit,
+  doShowDisconnect,
+  disconnect,
+}: IConnectFormProps) => {
   const _handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const toConnectId = (e.target as HTMLFormElement)["peer-id"].value as string
@@ -107,19 +170,35 @@ const PeerConnectForm = ({ handleSubmit }: IConnectFormProps) => {
   return (
     <form action="" onSubmit={_handleSubmit}>
       <FormControl id="peer-id">
-        <Input type="text" />
-        <FormHelperText color="white">
-          Enter a peer's ID and connect!
-        </FormHelperText>
-        <Button type="submit" colorScheme="telegram" mt="1rem">
-          Connect
-        </Button>
+        <HStack alignItems="center" justifyContent="center">
+          <Input
+            type="text"
+            onClick={(e) => {
+              e.currentTarget.select()
+            }}
+          />
+          <Button type="submit" colorScheme="telegram">
+            Connect
+          </Button>
+
+          {doShowDisconnect && (
+            <Button colorScheme="red" onClick={disconnect}>
+              Disconnect
+            </Button>
+          )}
+        </HStack>
       </FormControl>
     </form>
   )
 }
 
 const usePeerConnections = () => {
+  const toast = useToast({
+    duration: 9000,
+    isClosable: true,
+    position: "top-right",
+  })
+
   const [myPeer, setMyPeer] = useState<Peer | null>(null)
   const latestMyPeer = useRef<typeof myPeer>(null)
   useEffect(() => {
@@ -127,13 +206,14 @@ const usePeerConnections = () => {
     latestMyPeer.current = myPeer
   }, [myPeer])
 
-  useEffect(() => {
-    // Initialize myPeer
-    if (myPeer) myPeer.destroy()
+  const initMyPeer = () => {
+    if (latestMyPeer.current) latestMyPeer.current.destroy()
     const peer = new Peer(nanoid(10))
-    listenForConnections(peer, handleConnection)
+    listenForConnections(peer)
     setMyPeer(peer)
-  }, [])
+  }
+
+  useEffect(initMyPeer, [])
 
   const [connections, setConnections] = useState<Peer.DataConnection[]>([])
   const latestConnections = useRef<typeof connections>([])
@@ -143,10 +223,16 @@ const usePeerConnections = () => {
   }, [connections])
 
   const addConnection = (conn: Peer.DataConnection) => {
+    toast({ title: "Peer Connected", description: conn.peer, status: "info" })
     setConnections(latestConnections.current.concat(conn))
   }
 
   const removeConnection = (conn: Peer.DataConnection) => {
+    toast({
+      title: "Peer Disconnected",
+      description: conn.peer,
+      status: "error",
+    })
     setConnections(
       latestConnections.current.filter((c) => c.peer !== conn.peer),
     )
@@ -156,6 +242,20 @@ const usePeerConnections = () => {
     const isMyPeer = peer === latestMyPeer.current?.id
     const hasPeer = latestConnections.current.some((c) => c.peer === peer)
     return isMyPeer || hasPeer
+  }
+  const disconnect = () => {
+    const toDisconnect = latestConnections.current
+    toDisconnect.forEach((conn) => conn.close())
+    setConnections([])
+  }
+
+  const listenForConnections = (callee: Peer) =>
+    callee.on("connection", handleConnection)
+
+  const connectToPeer = (toConnectId: string) => {
+    if (!latestMyPeer.current) return
+    const conn = latestMyPeer.current.connect(toConnectId)
+    handleConnection(conn)
   }
 
   const handleConnectionOpen = (conn: Peer.DataConnection) => {
@@ -180,7 +280,7 @@ const usePeerConnections = () => {
         action.peers.forEach((peer) => {
           if (hasPeer(peer) || !latestMyPeer.current) return
           console.log(`Connecting with shared peer ${peer}`)
-          connectToPeer(latestMyPeer.current, peer, handleConnection)
+          connectToPeer(peer)
         })
       }
     }
@@ -198,21 +298,14 @@ const usePeerConnections = () => {
     conn.on("error", console.error)
   }
 
-  return { myPeer, connections, handleConnection, hasPeer }
-}
-
-const listenForConnections = (
-  callee: Peer,
-  handleConnection: HandleConnectionCallback,
-) => callee.on("connection", handleConnection)
-
-const connectToPeer = (
-  caller: Peer,
-  toConnectId: string,
-  handleConnection: HandleConnectionCallback,
-) => {
-  const conn = caller.connect(toConnectId)
-  handleConnection(conn)
+  return {
+    myPeer,
+    connections,
+    connectToPeer,
+    disconnect,
+    hasPeer,
+    initMyPeer,
+  }
 }
 
 type HandleConnectionCallback = (conn: Peer.DataConnection) => void
