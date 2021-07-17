@@ -8,39 +8,36 @@ import {
   Tooltip,
   useToast,
 } from "@chakra-ui/react"
-import Peer from "peerjs"
 import React from "react"
-import { CustomPeerActionHandler } from "./types"
+import { CustomPeerActionHandler, IPeerState } from "./types"
 import usePeerConnections from "./usePeerConnections"
 
 interface IProps {
-  render?: (
-    myPeer: Peer | null,
-    connections: Peer.DataConnection[],
-  ) => React.ReactNode
+  render?: (state: IPeerState) => React.ReactNode
   customPeerActionHandler?: CustomPeerActionHandler
 }
 function PeerContainer({ customPeerActionHandler, render }: IProps) {
   const {
-    connections,
+    state: peerState,
     connectToPeer,
     disconnect,
     hasPeer,
     initMyPeer,
-    myPeer,
   } = usePeerConnections({
     customPeerActionHandler,
   })
+
+  const { peers, myPeer, setMyPeer, setPeers } = peerState
+
   const handleConnectFormSubmit = (toConnectId: string) => {
     if (hasPeer(toConnectId)) return
     connectToPeer(toConnectId)
   }
-  const hasPeers = connections.length > 0
+  const hasPeers = peers.length > 0
 
-  if (myPeer && !myPeer.id) {
+  if (myPeer && !myPeer.peerObj.id) {
     // Creating a new peer object with a random ID fails some times, causing the ID to be null
-    // Reload the page when this happens
-    window.location.reload()
+    return <div>Oops, Something broke! Please refresh the page.</div>
   }
 
   return (
@@ -51,7 +48,9 @@ function PeerContainer({ customPeerActionHandler, render }: IProps) {
         justifyContent="center"
         mt="1rem"
       >
-        {myPeer && myPeer.id && <CopyMyIDInput myId={myPeer.id} />}
+        {myPeer && myPeer.peerObj.id && (
+          <CopyMyIDInput myId={myPeer.peerObj.id} />
+        )}
         {!hasPeers && (
           <Button colorScheme="yellow" onClick={initMyPeer}>
             New ID
@@ -70,7 +69,7 @@ function PeerContainer({ customPeerActionHandler, render }: IProps) {
           doShowDisconnect={hasPeers}
           disconnect={disconnect}
         />
-        {render && render(myPeer, connections)}
+        {render && render({ myPeer, setMyPeer, peers, setPeers })}
       </Flex>
     </Box>
   )

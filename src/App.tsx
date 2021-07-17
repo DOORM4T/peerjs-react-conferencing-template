@@ -1,12 +1,11 @@
 import { Box, Heading, Input } from "@chakra-ui/react"
 import React from "react"
 import PeerContainer from "./components/PeerContainer"
-import ConnectionsTable, {
-  IConnectedPeer,
-  IMyPeerData,
-} from "./components/PeerContainer/ConnectionsTable"
+import ConnectionsTable from "./components/PeerContainer/ConnectionsTable"
 import {
   IChangeNameAction,
+  IPeerConnection,
+  IPeerData,
   peerActionCreators,
   PeerActions,
 } from "./components/PeerContainer/types"
@@ -22,21 +21,30 @@ function App() {
     >
       <Heading pt="1rem">PeerJS-React Template</Heading>
       <PeerContainer
-        customPeerActionHandler={(action) => {
+        customPeerActionHandler={(action, state) => {
           switch (action.type) {
             case PeerActions.CHANGE_NAME: {
-              const { name } = action as IChangeNameAction
+              const { senderId, name } = action as IChangeNameAction
               console.log(name)
+
+              state.setPeers((latest) => {
+                const changedPeerIndex = latest.findIndex(
+                  (peer) => peer.connection.peer === senderId,
+                )
+                if (changedPeerIndex === -1) return latest
+                const updatedPeer: IPeerConnection & IPeerData = {
+                  ...latest[changedPeerIndex],
+                  name,
+                }
+                const updatedPeers = [...latest]
+                updatedPeers[changedPeerIndex] = updatedPeer
+                return updatedPeers
+              })
             }
           }
         }}
-        render={(myPeer, connections) => {
-          if (!myPeer) return null
-
-          const myPeerData: IMyPeerData = { peerObj: myPeer }
-          const peers: IConnectedPeer[] = connections.map((connection) => ({
-            connection,
-          }))
+        render={({ myPeer, peers, setMyPeer, setPeers }) => {
+          if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
 
           return (
             <Box width="lg" mt="1rem">
@@ -44,15 +52,17 @@ function App() {
                 placeholder="Custom name"
                 onChange={(e) => {
                   const value = e.currentTarget.value
-                  myPeerData.name = value
+
+                  setMyPeer((latest) => ({ ...latest!, name: value }))
+
                   const changeNameAction = JSON.stringify(
-                    peerActionCreators.changeName(value),
+                    peerActionCreators.changeName(myPeer.peerObj.id, value),
                   )
-                  connections.forEach((conn) => conn.send(changeNameAction))
+                  peers.forEach((p) => p.connection.send(changeNameAction))
                 }}
               />
               {/* TODO: Update name when a peer changes their name */}
-              <ConnectionsTable myPeerData={myPeerData} peers={peers} />
+              <ConnectionsTable myPeer={myPeer} peers={peers} />
             </Box>
           )
         }}

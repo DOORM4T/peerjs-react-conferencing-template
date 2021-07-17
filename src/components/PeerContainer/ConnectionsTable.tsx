@@ -1,22 +1,12 @@
 import { Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react"
-import Peer from "peerjs"
 import React from "react"
-
-export interface IMyPeerData {
-  peerObj: Peer
-  name?: string
-}
-
-export interface IConnectedPeer {
-  connection: Peer.DataConnection
-  name?: string
-}
+import { IMyPeer, IPeerConnection, IPeerData } from "./types"
 
 const ConnectionsTable = (props: {
-  myPeerData: IMyPeerData
-  peers: IConnectedPeer[]
+  myPeer: IPeerData & IMyPeer
+  peers: (IPeerData & IPeerConnection)[]
 }) => {
-  const { myPeerData, peers } = props
+  const { myPeer, peers } = props
 
   return (
     <Table
@@ -36,8 +26,8 @@ const ConnectionsTable = (props: {
       </Thead>
       <Tbody>
         <Tr>
-          <Td>{myPeerData.peerObj.id}</Td>
-          <Td>{myPeerData.name || "-"}</Td>
+          <Td>{myPeer.peerObj.id}</Td>
+          <Td>{myPeer.name || "-"}</Td>
           <Td>"Doot doot"</Td>
         </Tr>
         {peers.map((p) => (

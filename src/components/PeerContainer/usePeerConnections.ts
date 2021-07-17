@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react"
 import {
   CustomPeerActionHandler,
   IConnectionAction,
+  IMyPeer,
+  IPeerConnection,
+  IPeerData,
   ISharePeersAction,
   peerActionCreators,
   PeerActions,
@@ -20,7 +23,7 @@ const usePeerConnections = (props: IProps) => {
     position: "top-right",
   })
 
-  const [myPeer, setMyPeer] = useState<Peer | null>(null)
+  const [myPeer, setMyPeer] = useState<(IMyPeer & IPeerData) | null>(null)
   const latestMyPeer = useRef<typeof myPeer>(null)
   useEffect(() => {
     // Track latest myPeer state in a ref so we can access it in listeners or other functions that rely on it
@@ -28,24 +31,30 @@ const usePeerConnections = (props: IProps) => {
   }, [myPeer])
 
   const initMyPeer = () => {
-    if (latestMyPeer.current) latestMyPeer.current.destroy()
-    const peer = new Peer(nanoid(10))
-    listenForConnections(peer)
-    setMyPeer(peer)
+    if (latestMyPeer.current?.peerObj) latestMyPeer.current.peerObj.destroy()
+    const peerObj = new Peer(nanoid(10))
+    listenForConnections(peerObj)
+
+    // A peer's name will be their ID by default
+    setMyPeer({ peerObj, name: peerObj.id })
   }
 
   useEffect(initMyPeer, [])
 
-  const [connections, setConnections] = useState<Peer.DataConnection[]>([])
-  const latestConnections = useRef<typeof connections>([])
+  const [peers, setPeers] = useState<(IPeerConnection & IPeerData)[]>([])
+  const latestConnections = useRef<typeof peers>([])
   useEffect(() => {
     // Track latest connections state in a ref so we can access it in listeners or other functions that rely on it
-    latestConnections.current = connections
-  }, [connections])
+    latestConnections.current = peers
+  }, [peers])
 
   const addConnection = (conn: Peer.DataConnection) => {
     toast({ title: "Peer Connected", description: conn.peer, status: "info" })
-    setConnections(latestConnections.current.concat(conn))
+    const updatedConnections = latestConnections.current.concat({
+      connection: conn,
+      name: conn.peer,
+    })
+    setPeers(updatedConnections)
   }
 
   const removeConnection = (conn: Peer.DataConnection) => {
@@ -54,20 +63,22 @@ const usePeerConnections = (props: IProps) => {
       description: conn.peer,
       status: "error",
     })
-    setConnections(
-      latestConnections.current.filter((c) => c.peer !== conn.peer),
+    setPeers(
+      latestConnections.current.filter((c) => c.connection.peer !== conn.peer),
     )
   }
 
   const hasPeer = (peer: string) => {
-    const isMyPeer = peer === latestMyPeer.current?.id
-    const hasPeer = latestConnections.current.some((c) => c.peer === peer)
+    const isMyPeer = peer === latestMyPeer.current?.peerObj.id
+    const hasPeer = latestConnections.current.some(
+      (c) => c.connection.peer === peer,
+    )
     return isMyPeer || hasPeer
   }
   const disconnect = () => {
     const toDisconnect = latestConnections.current
-    toDisconnect.forEach((conn) => conn.close())
-    setConnections([])
+    toDisconnect.forEach((conn) => conn.connection.close())
+    setPeers([])
   }
 
   const listenForConnections = (callee: Peer) =>
@@ -75,7 +86,7 @@ const usePeerConnections = (props: IProps) => {
 
   const connectToPeer = (toConnectId: string) => {
     if (!latestMyPeer.current) return
-    const conn = latestMyPeer.current.connect(toConnectId)
+    const conn = latestMyPeer.current.peerObj.connect(toConnectId)
     handleConnection(conn)
   }
 
@@ -84,11 +95,12 @@ const usePeerConnections = (props: IProps) => {
     addConnection(conn)
     console.log(`Connected with ${conn.peer}`)
 
+    const myId = latestMyPeer.current?.peerObj.id
+    if (!myId) return
+
     conn.send(
       JSON.stringify(
-        peerActionCreators.sharePeers(
-          latestConnections.current.map((c) => c.peer),
-        ),
+        peerActionCreators.sharePeers(myId, latestConnections.current),
       ),
     )
     console.log(`Shared peers with ${conn.peer}`)
@@ -99,17 +111,23 @@ const usePeerConnections = (props: IProps) => {
 
     const action = JSON.parse(data) as IConnectionAction
     if (action.type === PeerActions.SHARE_PEERS) {
-      const { peers } = action as ISharePeersAction
-      peers.forEach((peer) => {
-        if (hasPeer(peer) || !latestMyPeer.current) return
-        console.log(`Connecting with shared peer ${peer}`)
-        connectToPeer(peer)
+      const { toShare } = action as ISharePeersAction
+      toShare.forEach((sharedPeer) => {
+        if (hasPeer(sharedPeer.peerId) || !latestMyPeer.current) return
+        console.log(`Connecting with shared peer ${sharedPeer.peerId}`)
+        connectToPeer(sharedPeer.peerId)
       })
       return
     }
 
     // Handle custom actions
-    props.customPeerActionHandler && props.customPeerActionHandler(action)
+    props.customPeerActionHandler &&
+      props.customPeerActionHandler(action, {
+        myPeer,
+        setMyPeer,
+        peers,
+        setPeers,
+      })
   }
 
   const handleConnectionClose = (conn: Peer.DataConnection) => {
@@ -125,8 +143,13 @@ const usePeerConnections = (props: IProps) => {
   }
 
   return {
-    myPeer,
-    connections,
+    state: {
+      myPeer,
+      setMyPeer,
+
+      peers,
+      setPeers,
+    },
     connectToPeer,
     disconnect,
     hasPeer,
