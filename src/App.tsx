@@ -3,9 +3,11 @@ import React from "react"
 import PeerContainer from "./components/PeerContainer"
 import ConnectionsTable from "./components/PeerContainer/ConnectionsTable"
 import {
+  CustomPeerActionHandler,
   IChangeNameAction,
   IPeerConnection,
   IPeerData,
+  IPeerState,
   peerActionCreators,
   PeerActions,
 } from "./components/PeerContainer/types"
@@ -21,54 +23,58 @@ function App() {
     >
       <Heading pt="1rem">PeerJS-React Template</Heading>
       <PeerContainer
-        customPeerActionHandler={(action, state) => {
-          switch (action.type) {
-            case PeerActions.CHANGE_NAME: {
-              const { senderId, name } = action as IChangeNameAction
-              console.log(name)
-
-              state.setPeers((latest) => {
-                const changedPeerIndex = latest.findIndex(
-                  (peer) => peer.connection.peer === senderId,
-                )
-                if (changedPeerIndex === -1) return latest
-                const updatedPeer: IPeerConnection & IPeerData = {
-                  ...latest[changedPeerIndex],
-                  name,
-                }
-                const updatedPeers = [...latest]
-                updatedPeers[changedPeerIndex] = updatedPeer
-                return updatedPeers
-              })
-            }
-          }
-        }}
-        render={({ myPeer, peers, setMyPeer, setPeers }) => {
-          if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
-
-          return (
-            <Box width="lg" mt="1rem">
-              <Input
-                placeholder="Custom name"
-                onChange={(e) => {
-                  const value = e.currentTarget.value
-
-                  setMyPeer((latest) => ({ ...latest!, name: value }))
-
-                  const changeNameAction = JSON.stringify(
-                    peerActionCreators.changeName(myPeer.peerObj.id, value),
-                  )
-                  peers.forEach((p) => p.connection.send(changeNameAction))
-                }}
-              />
-              {/* TODO: Update name when a peer changes their name */}
-              <ConnectionsTable myPeer={myPeer} peers={peers} />
-            </Box>
-          )
-        }}
+        customPeerActionHandler={customPeerActionHandler}
+        render={render}
       />
     </Box>
   )
+}
+
+const render = ({ myPeer, peers, setMyPeer, setPeers }: IPeerState) => {
+  if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
+
+  return (
+    <Box width="lg" mt="1rem">
+      <Input
+        placeholder="Custom name"
+        onChange={(e) => {
+          const value = e.currentTarget.value
+
+          setMyPeer((latest) => ({ ...latest!, name: value }))
+
+          const changeNameAction = JSON.stringify(
+            peerActionCreators.changeName(myPeer.peerObj.id, value),
+          )
+          peers.forEach((p) => p.connection.send(changeNameAction))
+        }}
+      />
+      {/* TODO: Update name when a peer changes their name */}
+      <ConnectionsTable myPeer={myPeer} peers={peers} />
+    </Box>
+  )
+}
+
+const customPeerActionHandler: CustomPeerActionHandler = (action, state) => {
+  switch (action.type) {
+    case PeerActions.CHANGE_NAME: {
+      const { senderId, name } = action as IChangeNameAction
+      console.log(name)
+
+      state.setPeers((latest) => {
+        const changedPeerIndex = latest.findIndex(
+          (peer) => peer.connection.peer === senderId,
+        )
+        if (changedPeerIndex === -1) return latest
+        const updatedPeer: IPeerConnection & IPeerData = {
+          ...latest[changedPeerIndex],
+          name,
+        }
+        const updatedPeers = [...latest]
+        updatedPeers[changedPeerIndex] = updatedPeer
+        return updatedPeers
+      })
+    }
+  }
 }
 
 export default App
