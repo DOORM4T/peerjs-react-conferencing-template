@@ -21,20 +21,17 @@ const ConnectionsTable = (props: {
         <Tr>
           <Th>ID</Th>
           <Th>Name</Th>
-          <Th>Data</Th>
         </Tr>
       </Thead>
       <Tbody>
         <Tr>
           <Td>{myPeer.peerObj.id}</Td>
           <Td>{myPeer.name || "-"}</Td>
-          <Td>"Doot doot"</Td>
         </Tr>
         {peers.map((p) => (
           <Tr key={p.connection.peer}>
             <Td>{p.connection.peer}</Td>
             <Td>{p.name || "-"}</Td>
-            <Td>"Beep boop"</Td>
           </Tr>
         ))}
       </Tbody>

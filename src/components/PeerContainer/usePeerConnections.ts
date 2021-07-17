@@ -8,6 +8,7 @@ import {
   IMyPeer,
   IPeerConnection,
   IPeerData,
+  IShareMyPeerDataAction,
   ISharePeersAction,
   peerActionCreators,
   PeerActions,
@@ -98,11 +99,20 @@ const usePeerConnections = (props: IProps) => {
     const myId = latestMyPeer.current?.peerObj.id
     if (!myId) return
 
-    conn.send(
-      JSON.stringify(
-        peerActionCreators.sharePeers(myId, latestConnections.current),
+    const sharePeersAction = JSON.stringify(
+      peerActionCreators.sharePeers(
+        myId,
+        latestConnections.current.map((c) => c.connection.peer),
       ),
     )
+    conn.send(sharePeersAction)
+
+    const myPeerData = { ...latestMyPeer.current }
+    delete myPeerData?.peerObj
+    const shareMyPeerDataAction = JSON.stringify(
+      peerActionCreators.shareMyPeerData(myId, myPeerData),
+    )
+    conn.send(shareMyPeerDataAction)
     console.log(`Shared peers with ${conn.peer}`)
   }
 
@@ -110,14 +120,36 @@ const usePeerConnections = (props: IProps) => {
     console.log(`[${conn.peer}]: ${data}`)
 
     const action = JSON.parse(data) as IConnectionAction
-    if (action.type === PeerActions.SHARE_PEERS) {
-      const { toShare } = action as ISharePeersAction
-      toShare.forEach((sharedPeer) => {
-        if (hasPeer(sharedPeer.peerId) || !latestMyPeer.current) return
-        console.log(`Connecting with shared peer ${sharedPeer.peerId}`)
-        connectToPeer(sharedPeer.peerId)
-      })
-      return
+    switch (action.type) {
+      case PeerActions.SHARE_PEERS: {
+        const { peers } = action as ISharePeersAction
+        peers.forEach((peer) => {
+          if (hasPeer(peer) || !latestMyPeer.current) return
+          console.log(`Connecting with shared peer ${peer}`)
+          connectToPeer(peer)
+        })
+        return
+      }
+
+      case PeerActions.SHARE_MY_PEER_DATA: {
+        const { senderId, data } = action as IShareMyPeerDataAction
+        console.log(data)
+        setPeers((latest) => {
+          const toUpdateIndex = latest.findIndex(
+            (p) => p.connection.peer === senderId,
+          )
+          if (toUpdateIndex === -1) return latest
+          const updatedPeer: IPeerData & IPeerConnection = {
+            ...latest[toUpdateIndex],
+            ...data,
+          }
+          const updatedPeers = [...latest]
+          updatedPeers[toUpdateIndex] = updatedPeer
+          return updatedPeers
+        })
+
+        return
+      }
     }
 
     // Handle custom actions

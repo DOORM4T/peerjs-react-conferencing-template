@@ -31,12 +31,14 @@ export enum PeerActions {
   SHARE_PEERS = "SHARE_PEERS",
 
   // ADD CUSTOM PEER ACTION TYPES BELOW
+  SHARE_MY_PEER_DATA = "SHARE_MY_PEER_DATA",
   CHANGE_NAME = "CHANGE_NAME",
 }
 
 // EXPORT CUSTOM ACTION CREATORS HERE
 export const peerActionCreators = {
   sharePeers,
+  shareMyPeerData,
   changeName,
 }
 
@@ -45,23 +47,23 @@ export interface IConnectionAction {
   type: PeerActions
 }
 
-export type PeerDataToShare = { peerId: string } & IPeerData
 export interface ISharePeersAction extends IConnectionAction {
   type: PeerActions.SHARE_PEERS
-  toShare: PeerDataToShare[]
+  peers: string[]
 }
-function sharePeers(
-  senderId: string,
-  peers: (IPeerConnection & IPeerData)[],
-): ISharePeersAction {
-  const toShare = peers.map((c) => {
-    const toShare: any = { ...c }
-    toShare.peerId = c.connection.peer
-    delete toShare.connection
-    return toShare as PeerDataToShare
-  })
+function sharePeers(senderId: string, peers: string[]): ISharePeersAction {
+  return { type: PeerActions.SHARE_PEERS, senderId, peers }
+}
 
-  return { type: PeerActions.SHARE_PEERS, senderId, toShare }
+export interface IShareMyPeerDataAction extends IConnectionAction {
+  type: PeerActions
+  data: IPeerData
+}
+function shareMyPeerData(
+  senderId: string,
+  data: IPeerData,
+): IShareMyPeerDataAction {
+  return { type: PeerActions.SHARE_MY_PEER_DATA, senderId, data }
 }
 
 export interface IChangeNameAction extends IConnectionAction {
