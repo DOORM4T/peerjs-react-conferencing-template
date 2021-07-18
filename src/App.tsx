@@ -1,16 +1,19 @@
 import { Box, Button, Heading, HStack, Input, useToast } from "@chakra-ui/react"
 import React from "react"
 import PeerContainer from "./components/PeerContainer"
+import {
+  changeName,
+  handlePeerNameChange,
+} from "./components/PeerContainer/actions/changeName"
+import {
+  handlePeerDiceRoll,
+  rollDice,
+} from "./components/PeerContainer/actions/rollDice"
 import DiceRollTable from "./components/PeerContainer/DiceRollTable"
 import {
   CustomConnectionHandler,
   CustomPeerActionHandler,
-  IChangeNameAction,
-  IPeerConnection,
-  IPeerData,
   IPeerState,
-  IRollAction,
-  peerActionCreators,
   PeerActions,
 } from "./components/PeerContainer/types"
 
@@ -47,6 +50,26 @@ const usePeerDiceRoller = () => {
   const render = ({ myPeer, peers, setMyPeer, setPeers }: IPeerState) => {
     if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
 
+    const handleDiceRoll = () => {
+      const roll = Math.floor(Math.random() * (20 - 1)) + 1
+
+      setMyPeer((latest) => ({ ...latest!, latestRoll: roll }))
+
+      const action = JSON.stringify(rollDice(myPeer.peerObj.id, roll))
+      peers.forEach((p) => p.connection.send(action))
+    }
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.currentTarget.value
+
+      setMyPeer((latest) => ({ ...latest!, name: value }))
+
+      const changeNameAction = JSON.stringify(
+        changeName(myPeer.peerObj.id, value),
+      )
+      peers.forEach((p) => p.connection.send(changeNameAction))
+    }
+
     return (
       <Box width="lg" mt="3rem">
         <hr />
@@ -54,36 +77,11 @@ const usePeerDiceRoller = () => {
           Demo: Dice Roller
         </Heading>
         <HStack mt="1rem">
-          <Input
-            placeholder="Custom name"
-            onChange={(e) => {
-              const value = e.currentTarget.value
-
-              setMyPeer((latest) => ({ ...latest!, name: value }))
-
-              const changeNameAction = JSON.stringify(
-                peerActionCreators.changeName(myPeer.peerObj.id, value),
-              )
-              peers.forEach((p) => p.connection.send(changeNameAction))
-            }}
-          />
-          <Button
-            colorScheme="yellow"
-            onClick={() => {
-              const roll = Math.floor(Math.random() * (20 - 1)) + 1
-
-              setMyPeer((latest) => ({ ...latest!, latestRoll: roll }))
-
-              const action = JSON.stringify(
-                peerActionCreators.roll(myPeer.peerObj.id, roll),
-              )
-              peers.forEach((p) => p.connection.send(action))
-            }}
-          >
+          <Input placeholder="Custom name" onChange={handleNameChange} />
+          <Button colorScheme="yellow" onClick={handleDiceRoll}>
             Roll
           </Button>
         </HStack>
-        {/* TODO: Update name when a peer changes their name */}
         <Box mt="1rem">
           <DiceRollTable myPeer={myPeer} peers={peers} />
         </Box>
@@ -93,41 +91,13 @@ const usePeerDiceRoller = () => {
 
   const onPeerAction: CustomPeerActionHandler = (action, state) => {
     switch (action.type) {
-      case PeerActions.CHANGE_NAME: {
-        const { senderId, name } = action as IChangeNameAction
+      case PeerActions.CHANGE_NAME:
+        handlePeerNameChange(action, state)
+        return
 
-        state.setPeers((latest) => {
-          const changedPeerIndex = latest.findIndex(
-            (peer) => peer.connection.peer === senderId,
-          )
-          if (changedPeerIndex === -1) return latest
-          const updatedPeer: IPeerConnection & IPeerData = {
-            ...latest[changedPeerIndex],
-            name,
-          }
-          const updatedPeers = [...latest]
-          updatedPeers[changedPeerIndex] = updatedPeer
-          return updatedPeers
-        })
-      }
-
-      case PeerActions.ROLL: {
-        const { senderId, roll } = action as IRollAction
-
-        state.setPeers((latest) => {
-          const changedPeerIndex = latest.findIndex(
-            (peer) => peer.connection.peer === senderId,
-          )
-          if (changedPeerIndex === -1) return latest
-          const updatedPeer: IPeerConnection & IPeerData = {
-            ...latest[changedPeerIndex],
-            latestRoll: roll,
-          }
-          const updatedPeers = [...latest]
-          updatedPeers[changedPeerIndex] = updatedPeer
-          return updatedPeers
-        })
-      }
+      case PeerActions.ROLL:
+        handlePeerDiceRoll(action, state)
+        return
     }
   }
 

@@ -2,16 +2,18 @@ import { nanoid } from "nanoid"
 import Peer from "peerjs"
 import { useEffect, useRef, useState } from "react"
 import {
+  IShareMyPeerDataAction,
+  shareMyPeerData,
+} from "./actions/shareMyPeerData"
+import { ISharePeersAction, sharePeers } from "./actions/sharePeers"
+import {
   CustomConnectionHandler,
   CustomPeerActionHandler,
-  IConnectionAction,
   IMyPeer,
+  IPeerAction,
   IPeerConnection,
   IPeerData,
   IPeerState,
-  IShareMyPeerDataAction,
-  ISharePeersAction,
-  peerActionCreators,
   PeerActions,
 } from "./types"
 
@@ -99,7 +101,7 @@ const usePeerConnections = (props: IProps) => {
     // Share my peers with the new peer -- this allows them to join group connections
     // This conferencing method follows a mesh topology, which might not be suitable for large groups
     const sharePeersAction = JSON.stringify(
-      peerActionCreators.sharePeers(
+      sharePeers(
         myId,
         latestPeers.current.map((c) => c.connection.peer),
       ),
@@ -114,7 +116,7 @@ const usePeerConnections = (props: IProps) => {
     const myPeerData = { ...latestMyPeer.current }
     delete myPeerData?.peerObj
     const shareMyPeerDataAction = JSON.stringify(
-      peerActionCreators.shareMyPeerData(myId, myPeerData),
+      shareMyPeerData(myId, myPeerData),
     )
     conn.send(shareMyPeerDataAction)
     console.log(`Shared peers with ${conn.peer}`)
@@ -123,7 +125,7 @@ const usePeerConnections = (props: IProps) => {
   const handleConnectionData = (conn: Peer.DataConnection, data: string) => {
     console.log(`[${conn.peer}]: ${data}`)
 
-    const action = JSON.parse(data) as IConnectionAction
+    const action = JSON.parse(data) as IPeerAction
     switch (action.type) {
       case PeerActions.SHARE_PEERS: {
         const { peers } = action as ISharePeersAction
