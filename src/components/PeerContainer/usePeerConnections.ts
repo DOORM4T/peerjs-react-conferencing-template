@@ -1,3 +1,4 @@
+import produce from "immer"
 import { nanoid } from "nanoid"
 import Peer from "peerjs"
 import { useEffect, useRef, useState } from "react"
@@ -148,20 +149,15 @@ const usePeerConnections = (props: IProps) => {
           props.onConnectionOpen && props.onConnectionOpen(conn, latestState)
         }
 
-        setPeers((latest) => {
-          const toUpdateIndex = latest.findIndex(
-            (p) => p.connection.peer === senderId,
-          )
-          if (toUpdateIndex === -1) return latest
-          const updatedPeer: IPeerData & IPeerConnection = {
-            ...latest[toUpdateIndex],
-            ...data,
-          }
-          const updatedPeers = [...latest]
-          updatedPeers[toUpdateIndex] = updatedPeer
-          return updatedPeers
-        })
-
+        setPeers((latest) =>
+          produce(latest, (draft) => {
+            const peerIndex = draft.findIndex(
+              (p) => p.connection.peer === senderId,
+            )
+            if (peerIndex === -1) return
+            draft[peerIndex] = { ...draft[peerIndex], ...data }
+          }),
+        )
         return
       }
     }

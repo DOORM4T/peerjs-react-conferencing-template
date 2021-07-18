@@ -1,3 +1,4 @@
+import { produce } from "immer"
 import {
   IPeerAction,
   IPeerConnection,
@@ -17,17 +18,20 @@ export function rollDice(senderId: string, roll: number): IRollDiceAction {
 export function handlePeerDiceRoll(action: IPeerAction, state: IPeerState) {
   const { senderId, roll } = action as IRollDiceAction
 
-  state.setPeers((latest) => {
-    const changedPeerIndex = latest.findIndex(
-      (peer) => peer.connection.peer === senderId,
-    )
-    if (changedPeerIndex === -1) return latest
-    const updatedPeer: IPeerConnection & IPeerData = {
-      ...latest[changedPeerIndex],
-      latestRoll: roll,
-    }
-    const updatedPeers = [...latest]
-    updatedPeers[changedPeerIndex] = updatedPeer
-    return updatedPeers
+  state.setPeers((latest) => updatePeers(senderId, roll, latest))
+}
+
+function updatePeers(
+  senderId: string,
+  roll: number,
+  peers: (IPeerConnection & IPeerData)[],
+) {
+  const nextState = produce(peers, (draft) => {
+    const isSender = (peer: IPeerConnection) =>
+      peer.connection.peer === senderId
+    const peerIndex = draft.findIndex(isSender)
+    if (peerIndex === -1) return
+    draft[peerIndex].latestRoll = roll
   })
+  return nextState
 }
