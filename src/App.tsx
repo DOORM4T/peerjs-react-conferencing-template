@@ -1,8 +1,9 @@
-import { Box, Heading, Input } from "@chakra-ui/react"
+import { Box, Heading, Input, useToast } from "@chakra-ui/react"
 import React from "react"
 import PeerContainer from "./components/PeerContainer"
 import ConnectionsTable from "./components/PeerContainer/ConnectionsTable"
 import {
+  CustomConnectionHandler,
   CustomPeerActionHandler,
   IChangeNameAction,
   IPeerConnection,
@@ -12,7 +13,10 @@ import {
   PeerActions,
 } from "./components/PeerContainer/types"
 
-function App() {
+const App = () => {
+  const { render, onConnectionOpen, onConnectionClose, onPeerAction } =
+    usePeerContainer()
+
   return (
     <Box
       width="100vw"
@@ -23,58 +27,83 @@ function App() {
     >
       <Heading pt="1rem">PeerJS-React Template</Heading>
       <PeerContainer
-        customPeerActionHandler={customPeerActionHandler}
         render={render}
+        onPeerAction={onPeerAction}
+        onConnectionOpen={onConnectionOpen}
+        onConnectionClose={onConnectionClose}
       />
     </Box>
   )
 }
 
-const render = ({ myPeer, peers, setMyPeer, setPeers }: IPeerState) => {
-  if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
+const usePeerContainer = () => {
+  const toast = useToast({
+    duration: 9000,
+    isClosable: true,
+    position: "top-right",
+  })
 
-  return (
-    <Box width="lg" mt="1rem">
-      <Input
-        placeholder="Custom name"
-        onChange={(e) => {
-          const value = e.currentTarget.value
+  const render = ({ myPeer, peers, setMyPeer, setPeers }: IPeerState) => {
+    if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
 
-          setMyPeer((latest) => ({ ...latest!, name: value }))
+    return (
+      <Box width="lg" mt="1rem">
+        <Input
+          placeholder="Custom name"
+          onChange={(e) => {
+            const value = e.currentTarget.value
 
-          const changeNameAction = JSON.stringify(
-            peerActionCreators.changeName(myPeer.peerObj.id, value),
+            setMyPeer((latest) => ({ ...latest!, name: value }))
+
+            const changeNameAction = JSON.stringify(
+              peerActionCreators.changeName(myPeer.peerObj.id, value),
+            )
+            peers.forEach((p) => p.connection.send(changeNameAction))
+          }}
+        />
+        {/* TODO: Update name when a peer changes their name */}
+        <ConnectionsTable myPeer={myPeer} peers={peers} />
+      </Box>
+    )
+  }
+
+  const onPeerAction: CustomPeerActionHandler = (action, state) => {
+    switch (action.type) {
+      case PeerActions.CHANGE_NAME: {
+        const { senderId, name } = action as IChangeNameAction
+
+        state.setPeers((latest) => {
+          const changedPeerIndex = latest.findIndex(
+            (peer) => peer.connection.peer === senderId,
           )
-          peers.forEach((p) => p.connection.send(changeNameAction))
-        }}
-      />
-      {/* TODO: Update name when a peer changes their name */}
-      <ConnectionsTable myPeer={myPeer} peers={peers} />
-    </Box>
-  )
-}
-
-const customPeerActionHandler: CustomPeerActionHandler = (action, state) => {
-  switch (action.type) {
-    case PeerActions.CHANGE_NAME: {
-      const { senderId, name } = action as IChangeNameAction
-      console.log(name)
-
-      state.setPeers((latest) => {
-        const changedPeerIndex = latest.findIndex(
-          (peer) => peer.connection.peer === senderId,
-        )
-        if (changedPeerIndex === -1) return latest
-        const updatedPeer: IPeerConnection & IPeerData = {
-          ...latest[changedPeerIndex],
-          name,
-        }
-        const updatedPeers = [...latest]
-        updatedPeers[changedPeerIndex] = updatedPeer
-        return updatedPeers
-      })
+          if (changedPeerIndex === -1) return latest
+          const updatedPeer: IPeerConnection & IPeerData = {
+            ...latest[changedPeerIndex],
+            name,
+          }
+          const updatedPeers = [...latest]
+          updatedPeers[changedPeerIndex] = updatedPeer
+          return updatedPeers
+        })
+      }
     }
   }
+
+  const onConnectionOpen: CustomConnectionHandler = (conn, state) => {
+    const newPeer = state.peers.find((p) => p.connection.peer === conn.peer)
+    const description = `${newPeer?.name ? `${newPeer.name} ` : ""}${conn.peer}`
+    toast({ title: "Peer Connected", description, status: "info" })
+  }
+
+  const onConnectionClose: CustomConnectionHandler = (conn, state) => {
+    const closedPeer = state.peers.find((p) => p.connection.peer === conn.peer)
+    const description = `${closedPeer?.name ? `${closedPeer.name} ` : ""}${
+      conn.peer
+    }`
+    toast({ title: "Peer Disconnected", description, status: "error" })
+  }
+
+  return { render, onPeerAction, onConnectionOpen, onConnectionClose }
 }
 
 export default App

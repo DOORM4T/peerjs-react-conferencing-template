@@ -1,5 +1,10 @@
 import Peer from "peerjs"
 
+export type CustomConnectionHandler = (
+  conn: Peer.DataConnection,
+  state: IPeerState,
+) => void
+
 export type CustomPeerActionHandler = (
   action: IConnectionAction,
   state: IPeerState,
