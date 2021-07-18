@@ -1,3 +1,4 @@
+import produce from "../../../../snowpack/pkg/immer.js";
 import {
   PeerActions
 } from "../types.js";
@@ -6,16 +7,15 @@ export function changeName(senderId, name) {
 }
 export function handlePeerNameChange(action, state) {
   const {senderId, name} = action;
-  state.setPeers((latest) => {
-    const changedPeerIndex = latest.findIndex((peer) => peer.connection.peer === senderId);
-    if (changedPeerIndex === -1)
-      return latest;
-    const updatedPeer = {
-      ...latest[changedPeerIndex],
-      name
-    };
-    const updatedPeers = [...latest];
-    updatedPeers[changedPeerIndex] = updatedPeer;
-    return updatedPeers;
+  state.setPeers((latest) => updatePeers(senderId, name, latest));
+}
+function updatePeers(senderId, name, peers) {
+  const nextState = produce(peers, (draft) => {
+    const isSender = (peer) => peer.connection.peer === senderId;
+    const peerIndex = draft.findIndex(isSender);
+    if (peerIndex === -1)
+      return;
+    draft[peerIndex].name = name;
   });
+  return nextState;
 }
