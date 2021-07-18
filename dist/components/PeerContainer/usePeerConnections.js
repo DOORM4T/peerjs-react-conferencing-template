@@ -72,8 +72,7 @@ const usePeerConnections = (props) => {
     console.log(`Connected with ${conn.peer}`);
     const sharePeersAction = JSON.stringify(sharePeers(myId, latestPeers.current.map((c) => c.connection.peer)));
     conn.send(sharePeersAction);
-    const myPeerData = {...latestMyPeer.current};
-    delete myPeerData?.peerObj;
+    const {peerObj: _, ...myPeerData} = {...latestMyPeer.current};
     const shareMyPeerDataAction = JSON.stringify(shareMyPeerData(myId, myPeerData));
     conn.send(shareMyPeerDataAction);
     console.log(`Shared peers with ${conn.peer}`);
