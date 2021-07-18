@@ -22,6 +22,7 @@ export interface IPeerState {
 export interface IPeerData {
   name?: string
   // ADDITIONAL PEER DATA GOES HERE
+  latestRoll?: number
 }
 
 export interface IMyPeer {
@@ -34,17 +35,20 @@ export interface IPeerConnection {
 
 export enum PeerActions {
   SHARE_PEERS = "SHARE_PEERS",
-
-  // ADD CUSTOM PEER ACTION TYPES BELOW
   SHARE_MY_PEER_DATA = "SHARE_MY_PEER_DATA",
   CHANGE_NAME = "CHANGE_NAME",
+
+  // ADD CUSTOM PEER ACTION TYPES BELOW
+  ROLL = "ROLL",
 }
 
-// EXPORT CUSTOM ACTION CREATORS HERE
 export const peerActionCreators = {
   sharePeers,
   shareMyPeerData,
   changeName,
+
+  // EXPORT CUSTOM ACTION CREATORS BELOW
+  roll,
 }
 
 export interface IConnectionAction {
@@ -78,3 +82,13 @@ export interface IChangeNameAction extends IConnectionAction {
 function changeName(senderId: string, name: string): IChangeNameAction {
   return { type: PeerActions.CHANGE_NAME, senderId, name }
 }
+
+export interface IRollAction extends IConnectionAction {
+  type: PeerActions.ROLL
+  roll: number
+}
+function roll(senderId: string, roll: number): IRollAction {
+  return { type: PeerActions.ROLL, senderId, roll }
+}
+
+// CREATE CUSTOM ACTIONS AND ACTION CREATORS BELOW

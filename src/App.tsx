@@ -1,7 +1,7 @@
-import { Box, Heading, Input, useToast } from "@chakra-ui/react"
+import { Box, Button, Heading, HStack, Input, useToast } from "@chakra-ui/react"
 import React from "react"
 import PeerContainer from "./components/PeerContainer"
-import ConnectionsTable from "./components/PeerContainer/ConnectionsTable"
+import DiceRollTable from "./components/PeerContainer/DiceRollTable"
 import {
   CustomConnectionHandler,
   CustomPeerActionHandler,
@@ -9,13 +9,14 @@ import {
   IPeerConnection,
   IPeerData,
   IPeerState,
+  IRollAction,
   peerActionCreators,
   PeerActions,
 } from "./components/PeerContainer/types"
 
 const App = () => {
   const { render, onConnectionOpen, onConnectionClose, onPeerAction } =
-    usePeerContainer()
+    usePeerDiceRoller()
 
   return (
     <Box
@@ -36,7 +37,7 @@ const App = () => {
   )
 }
 
-const usePeerContainer = () => {
+const usePeerDiceRoller = () => {
   const toast = useToast({
     duration: 9000,
     isClosable: true,
@@ -47,22 +48,45 @@ const usePeerContainer = () => {
     if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id) return null
 
     return (
-      <Box width="lg" mt="1rem">
-        <Input
-          placeholder="Custom name"
-          onChange={(e) => {
-            const value = e.currentTarget.value
+      <Box width="lg" mt="3rem">
+        <hr />
+        <Heading size="lg" mt="1rem">
+          Demo: Dice Roller
+        </Heading>
+        <HStack mt="1rem">
+          <Input
+            placeholder="Custom name"
+            onChange={(e) => {
+              const value = e.currentTarget.value
 
-            setMyPeer((latest) => ({ ...latest!, name: value }))
+              setMyPeer((latest) => ({ ...latest!, name: value }))
 
-            const changeNameAction = JSON.stringify(
-              peerActionCreators.changeName(myPeer.peerObj.id, value),
-            )
-            peers.forEach((p) => p.connection.send(changeNameAction))
-          }}
-        />
+              const changeNameAction = JSON.stringify(
+                peerActionCreators.changeName(myPeer.peerObj.id, value),
+              )
+              peers.forEach((p) => p.connection.send(changeNameAction))
+            }}
+          />
+          <Button
+            colorScheme="yellow"
+            onClick={() => {
+              const roll = Math.floor(Math.random() * (20 - 1)) + 1
+
+              setMyPeer((latest) => ({ ...latest!, latestRoll: roll }))
+
+              const action = JSON.stringify(
+                peerActionCreators.roll(myPeer.peerObj.id, roll),
+              )
+              peers.forEach((p) => p.connection.send(action))
+            }}
+          >
+            Roll
+          </Button>
+        </HStack>
         {/* TODO: Update name when a peer changes their name */}
-        <ConnectionsTable myPeer={myPeer} peers={peers} />
+        <Box mt="1rem">
+          <DiceRollTable myPeer={myPeer} peers={peers} />
+        </Box>
       </Box>
     )
   }
@@ -80,6 +104,24 @@ const usePeerContainer = () => {
           const updatedPeer: IPeerConnection & IPeerData = {
             ...latest[changedPeerIndex],
             name,
+          }
+          const updatedPeers = [...latest]
+          updatedPeers[changedPeerIndex] = updatedPeer
+          return updatedPeers
+        })
+      }
+
+      case PeerActions.ROLL: {
+        const { senderId, roll } = action as IRollAction
+
+        state.setPeers((latest) => {
+          const changedPeerIndex = latest.findIndex(
+            (peer) => peer.connection.peer === senderId,
+          )
+          if (changedPeerIndex === -1) return latest
+          const updatedPeer: IPeerConnection & IPeerData = {
+            ...latest[changedPeerIndex],
+            latestRoll: roll,
           }
           const updatedPeers = [...latest]
           updatedPeers[changedPeerIndex] = updatedPeer
