@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@chakra-ui/react": "./@chakra-ui/react.js",
+    "nanoid": "./nanoid.js",
+    "peerjs": "./peerjs.js",
+    "react": "./react.js",
+    "react-dom": "./react-dom.js",
+    "webfontloader": "./webfontloader.js"
+  }
+}
