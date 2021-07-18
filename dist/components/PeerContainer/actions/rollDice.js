@@ -1,4 +1,4 @@
-import {produce} from "../../../pkg/immer.js";
+import {produce} from "../../../../snowpack/pkg/immer.js";
 import {
   PeerActions
 } from "../types.js";
