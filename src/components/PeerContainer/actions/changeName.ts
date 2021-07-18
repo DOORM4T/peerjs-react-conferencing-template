@@ -1,9 +1,10 @@
+import produce from "immer"
 import {
   IPeerAction,
   IPeerConnection,
   IPeerData,
   IPeerState,
-  PeerActions,
+  PeerActions
 } from "../types"
 
 export interface IChangeNameAction extends IPeerAction {
@@ -16,18 +17,20 @@ export function changeName(senderId: string, name: string): IChangeNameAction {
 
 export function handlePeerNameChange(action: IPeerAction, state: IPeerState) {
   const { senderId, name } = action as IChangeNameAction
+  state.setPeers((latest) => updatePeers(senderId, name, latest))
+}
 
-  state.setPeers((latest) => {
-    const changedPeerIndex = latest.findIndex(
-      (peer) => peer.connection.peer === senderId,
-    )
-    if (changedPeerIndex === -1) return latest
-    const updatedPeer: IPeerConnection & IPeerData = {
-      ...latest[changedPeerIndex],
-      name,
-    }
-    const updatedPeers = [...latest]
-    updatedPeers[changedPeerIndex] = updatedPeer
-    return updatedPeers
+function updatePeers(
+  senderId: string,
+  name: string,
+  peers: (IPeerConnection & IPeerData)[],
+) {
+  const nextState = produce(peers, (draft) => {
+    const isSender = (peer: IPeerConnection) =>
+      peer.connection.peer === senderId
+    const peerIndex = draft.findIndex(isSender)
+    if (peerIndex === -1) return
+    draft[peerIndex].name = name
   })
+  return nextState
 }
