@@ -4,7 +4,7 @@ import Peer from "peerjs"
 import { useEffect, useRef, useState } from "react"
 import {
   IShareMyPeerDataAction,
-  shareMyPeerData,
+  shareMyPeerData
 } from "./actions/shareMyPeerData"
 import { ISharePeersAction, sharePeers } from "./actions/sharePeers"
 import {
@@ -15,7 +15,7 @@ import {
   IPeerConnection,
   IPeerData,
   IPeerState,
-  PeerActions,
+  PeerActions
 } from "./types"
 
 interface IProps {
@@ -114,8 +114,11 @@ const usePeerConnections = (props: IProps) => {
     // IMPORTANT: the custom onConnectionOpen callback is actually called in handleConnectionData
     //  This ensures the newly connected peer can react to the new connection while having access to this peer's latest data
     //  Otherwise, fields like 'name' wouldn't be up to date when the peer calls onConnectionOpen from this function
-    const myPeerData = { ...latestMyPeer.current }
-    delete myPeerData?.peerObj
+
+    // The following line extracts ONLY IPeerData fields. IMyPeer type fields like peerObj won't be used here.
+    // This prevents JSON stringify circular structure bugs, which can prevent new peers from seeing shared data upon connecting
+    const {peerObj : _, ...myPeerData} = { ...latestMyPeer.current } 
+    
     const shareMyPeerDataAction = JSON.stringify(
       shareMyPeerData(myId, myPeerData),
     )
