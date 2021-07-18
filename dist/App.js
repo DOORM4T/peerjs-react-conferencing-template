@@ -1,5 +1,5 @@
-import {Box, Button, Heading, HStack, Input, useToast} from "../_snowpack/pkg/@chakra-ui/react.js";
-import React from "../_snowpack/pkg/react.js";
+import {Box, Button, Heading, HStack, Input, useToast} from "./pkg/@chakra-ui/react.js";
+import React from "./pkg/react.js";
 import PeerContainer from "./components/PeerContainer/index.js";
 import {
   changeName,

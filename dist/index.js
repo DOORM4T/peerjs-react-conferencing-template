@@ -1,7 +1,7 @@
-import {ChakraProvider} from "../_snowpack/pkg/@chakra-ui/react.js";
-import React from "../_snowpack/pkg/react.js";
-import ReactDOM from "../_snowpack/pkg/react-dom.js";
-import WebFont from "../_snowpack/pkg/webfontloader.js";
+import {ChakraProvider} from "./pkg/@chakra-ui/react.js";
+import React from "./pkg/react.js";
+import ReactDOM from "./pkg/react-dom.js";
+import WebFont from "./pkg/webfontloader.js";
 import App from "./App.js";
 import "./styles.css.proxy.js";
 WebFont.load({

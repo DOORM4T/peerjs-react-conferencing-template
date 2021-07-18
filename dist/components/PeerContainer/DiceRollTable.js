@@ -1,5 +1,5 @@
-import {Table, Tbody, Td, Th, Thead, Tr} from "../../../_snowpack/pkg/@chakra-ui/react.js";
-import React from "../../../_snowpack/pkg/react.js";
+import {Table, Tbody, Td, Th, Thead, Tr} from "../../pkg/@chakra-ui/react.js";
+import React from "../../pkg/react.js";
 const ConnectionsTable = (props) => {
   const {myPeer, peers} = props;
   return /* @__PURE__ */ React.createElement(Table, {

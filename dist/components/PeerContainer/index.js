@@ -7,8 +7,8 @@ import {
   Input,
   Tooltip,
   useToast
-} from "../../../_snowpack/pkg/@chakra-ui/react.js";
-import React from "../../../_snowpack/pkg/react.js";
+} from "../../pkg/@chakra-ui/react.js";
+import React from "../../pkg/react.js";
 import usePeerConnections from "./usePeerConnections.js";
 function PeerContainer({
   onConnectionOpen,

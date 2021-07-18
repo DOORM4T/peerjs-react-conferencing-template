@@ -1,7 +1,7 @@
-import produce from "../../../_snowpack/pkg/immer.js";
-import {nanoid} from "../../../_snowpack/pkg/nanoid.js";
-import Peer from "../../../_snowpack/pkg/peerjs.js";
-import {useEffect, useRef, useState} from "../../../_snowpack/pkg/react.js";
+import produce from "../../pkg/immer.js";
+import {nanoid} from "../../pkg/nanoid.js";
+import Peer from "../../pkg/peerjs.js";
+import {useEffect, useRef, useState} from "../../pkg/react.js";
 import {
   shareMyPeerData
 } from "./actions/shareMyPeerData.js";
