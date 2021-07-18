@@ -1,9 +1,16 @@
 import {Box, Button, Heading, HStack, Input, useToast} from "../_snowpack/pkg/@chakra-ui/react.js";
 import React from "../_snowpack/pkg/react.js";
 import PeerContainer from "./components/PeerContainer/index.js";
+import {
+  changeName,
+  handlePeerNameChange
+} from "./components/PeerContainer/actions/changeName.js";
+import {
+  handlePeerDiceRoll,
+  rollDice
+} from "./components/PeerContainer/actions/rollDice.js";
 import DiceRollTable from "./components/PeerContainer/DiceRollTable.js";
 import {
-  peerActionCreators,
   PeerActions
 } from "./components/PeerContainer/types.js";
 const App = () => {
@@ -32,6 +39,18 @@ const usePeerDiceRoller = () => {
   const render = ({myPeer, peers, setMyPeer, setPeers}) => {
     if (!myPeer || !myPeer.peerObj || !myPeer.peerObj.id)
       return null;
+    const handleDiceRoll = () => {
+      const roll = Math.floor(Math.random() * (20 - 1)) + 1;
+      setMyPeer((latest) => ({...latest, latestRoll: roll}));
+      const action = JSON.stringify(rollDice(myPeer.peerObj.id, roll));
+      peers.forEach((p) => p.connection.send(action));
+    };
+    const handleNameChange = (e) => {
+      const value = e.currentTarget.value;
+      setMyPeer((latest) => ({...latest, name: value}));
+      const changeNameAction = JSON.stringify(changeName(myPeer.peerObj.id, value));
+      peers.forEach((p) => p.connection.send(changeNameAction));
+    };
     return /* @__PURE__ */ React.createElement(Box, {
       width: "lg",
       mt: "3rem"
@@ -42,20 +61,10 @@ const usePeerDiceRoller = () => {
       mt: "1rem"
     }, /* @__PURE__ */ React.createElement(Input, {
       placeholder: "Custom name",
-      onChange: (e) => {
-        const value = e.currentTarget.value;
-        setMyPeer((latest) => ({...latest, name: value}));
-        const changeNameAction = JSON.stringify(peerActionCreators.changeName(myPeer.peerObj.id, value));
-        peers.forEach((p) => p.connection.send(changeNameAction));
-      }
+      onChange: handleNameChange
     }), /* @__PURE__ */ React.createElement(Button, {
       colorScheme: "yellow",
-      onClick: () => {
-        const roll = Math.floor(Math.random() * (20 - 1)) + 1;
-        setMyPeer((latest) => ({...latest, latestRoll: roll}));
-        const action = JSON.stringify(peerActionCreators.roll(myPeer.peerObj.id, roll));
-        peers.forEach((p) => p.connection.send(action));
-      }
+      onClick: handleDiceRoll
     }, "Roll")), /* @__PURE__ */ React.createElement(Box, {
       mt: "1rem"
     }, /* @__PURE__ */ React.createElement(DiceRollTable, {
@@ -65,36 +74,12 @@ const usePeerDiceRoller = () => {
   };
   const onPeerAction = (action, state) => {
     switch (action.type) {
-      case PeerActions.CHANGE_NAME: {
-        const {senderId, name} = action;
-        state.setPeers((latest) => {
-          const changedPeerIndex = latest.findIndex((peer) => peer.connection.peer === senderId);
-          if (changedPeerIndex === -1)
-            return latest;
-          const updatedPeer = {
-            ...latest[changedPeerIndex],
-            name
-          };
-          const updatedPeers = [...latest];
-          updatedPeers[changedPeerIndex] = updatedPeer;
-          return updatedPeers;
-        });
-      }
-      case PeerActions.ROLL: {
-        const {senderId, roll} = action;
-        state.setPeers((latest) => {
-          const changedPeerIndex = latest.findIndex((peer) => peer.connection.peer === senderId);
-          if (changedPeerIndex === -1)
-            return latest;
-          const updatedPeer = {
-            ...latest[changedPeerIndex],
-            latestRoll: roll
-          };
-          const updatedPeers = [...latest];
-          updatedPeers[changedPeerIndex] = updatedPeer;
-          return updatedPeers;
-        });
-      }
+      case PeerActions.CHANGE_NAME:
+        handlePeerNameChange(action, state);
+        return;
+      case PeerActions.ROLL:
+        handlePeerDiceRoll(action, state);
+        return;
     }
   };
   const onConnectionOpen = (conn, state) => {

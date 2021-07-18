@@ -1,8 +1,12 @@
+import produce from "../../../_snowpack/pkg/immer.js";
 import {nanoid} from "../../../_snowpack/pkg/nanoid.js";
 import Peer from "../../../_snowpack/pkg/peerjs.js";
 import {useEffect, useRef, useState} from "../../../_snowpack/pkg/react.js";
 import {
-  peerActionCreators,
+  shareMyPeerData
+} from "./actions/shareMyPeerData.js";
+import {sharePeers} from "./actions/sharePeers.js";
+import {
   PeerActions
 } from "./types.js";
 const usePeerConnections = (props) => {
@@ -66,11 +70,11 @@ const usePeerConnections = (props) => {
       return;
     addConnection(conn);
     console.log(`Connected with ${conn.peer}`);
-    const sharePeersAction = JSON.stringify(peerActionCreators.sharePeers(myId, latestPeers.current.map((c) => c.connection.peer)));
+    const sharePeersAction = JSON.stringify(sharePeers(myId, latestPeers.current.map((c) => c.connection.peer)));
     conn.send(sharePeersAction);
     const myPeerData = {...latestMyPeer.current};
     delete myPeerData?.peerObj;
-    const shareMyPeerDataAction = JSON.stringify(peerActionCreators.shareMyPeerData(myId, myPeerData));
+    const shareMyPeerDataAction = JSON.stringify(shareMyPeerData(myId, myPeerData));
     conn.send(shareMyPeerDataAction);
     console.log(`Shared peers with ${conn.peer}`);
   };
@@ -96,18 +100,12 @@ const usePeerConnections = (props) => {
           latestState.peers[latestPeerIndex].name = data2.name;
           props.onConnectionOpen && props.onConnectionOpen(conn, latestState);
         }
-        setPeers((latest) => {
-          const toUpdateIndex = latest.findIndex((p) => p.connection.peer === senderId);
-          if (toUpdateIndex === -1)
-            return latest;
-          const updatedPeer = {
-            ...latest[toUpdateIndex],
-            ...data2
-          };
-          const updatedPeers = [...latest];
-          updatedPeers[toUpdateIndex] = updatedPeer;
-          return updatedPeers;
-        });
+        setPeers((latest) => produce(latest, (draft) => {
+          const peerIndex = draft.findIndex((p) => p.connection.peer === senderId);
+          if (peerIndex === -1)
+            return;
+          draft[peerIndex] = {...draft[peerIndex], ...data2};
+        }));
         return;
       }
     }

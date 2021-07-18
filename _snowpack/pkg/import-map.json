@@ -1,6 +1,7 @@
 {
   "imports": {
     "@chakra-ui/react": "./@chakra-ui/react.js",
+    "immer": "./immer.js",
     "nanoid": "./nanoid.js",
     "peerjs": "./peerjs.js",
     "react": "./react.js",
