@@ -1,4 +1,12 @@
-import { Box, Button, Heading, HStack, Input, useToast } from "@chakra-ui/react"
+import {
+  Box,
+  Button,
+  Heading,
+  HStack,
+  Input,
+  useBreakpointValue,
+  useToast,
+} from "@chakra-ui/react"
 import React from "react"
 import PeerContainer from "./components/PeerContainer"
 import {
@@ -13,6 +21,9 @@ import DiceRollTable from "./components/PeerContainer/DiceRollTable"
 import {
   CustomConnectionHandler,
   CustomPeerActionHandler,
+  IMyPeer,
+  IPeerConnection,
+  IPeerData,
   IPeerState,
   PeerActions,
 } from "./components/PeerContainer/types"
@@ -71,21 +82,12 @@ const usePeerDiceRoller = () => {
     }
 
     return (
-      <Box width="lg" mt="3rem">
-        <hr />
-        <Heading size="lg" mt="1rem">
-          Demo: Dice Roller
-        </Heading>
-        <HStack mt="1rem">
-          <Input placeholder="Custom name" onChange={handleNameChange} />
-          <Button colorScheme="yellow" onClick={handleDiceRoll}>
-            Roll
-          </Button>
-        </HStack>
-        <Box mt="1rem">
-          <DiceRollTable myPeer={myPeer} peers={peers} />
-        </Box>
-      </Box>
+      <DiceRollTableWrapper
+        handleNameChange={handleNameChange}
+        handleDiceRoll={handleDiceRoll}
+        myPeer={myPeer}
+        peers={peers}
+      />
     )
   }
 
@@ -116,6 +118,32 @@ const usePeerDiceRoller = () => {
   }
 
   return { render, onPeerAction, onConnectionOpen, onConnectionClose }
+}
+
+const DiceRollTableWrapper = (props: {
+  handleNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  handleDiceRoll: () => void
+  myPeer: IMyPeer & IPeerData
+  peers: (IPeerConnection & IPeerData)[]
+}) => {
+  const { handleNameChange, handleDiceRoll, myPeer, peers } = props
+  return (
+    <Box width={useBreakpointValue({ sm: "sm", md: "md", lg: "lg" })} mt="3rem">
+      <hr />
+      <Heading size="lg" mt="1rem">
+        Demo: Dice Roller
+      </Heading>
+      <HStack mt="1rem">
+        <Input placeholder="Custom name" onChange={handleNameChange} />
+        <Button colorScheme="yellow" onClick={handleDiceRoll}>
+          Roll
+        </Button>
+      </HStack>
+      <Box mt="1rem">
+        <DiceRollTable myPeer={myPeer} peers={peers} />
+      </Box>
+    </Box>
+  )
 }
 
 export default App
