@@ -4275,6 +4275,19 @@ function mapResponsive(prop, mapper) {
 
   return null;
 }
+function arrayToObjectNotation(values, bps) {
+  if (bps === void 0) {
+    bps = breakpoints;
+  }
+
+  var result = {};
+  values.forEach(function (value, index) {
+    var key = bps[index];
+    if (value == null) return;
+    result[key] = value;
+  });
+  return result;
+}
 
 function _slicedToArray$2(arr, i) { return _arrayWithHoles$2(arr) || _iterableToArrayLimit$2(arr, i) || _unsupportedIterableToArray$2(arr, i) || _nonIterableRest$2(); }
 
@@ -12842,6 +12855,10 @@ var defaultEnv = isBrowser$1 ? {
   document: document
 } : mockEnv;
 var EnvironmentContext = /*#__PURE__*/react.createContext(defaultEnv);
+
+function useEnvironment() {
+  return react.useContext(EnvironmentContext);
+}
 function EnvironmentProvider(props) {
   var children = props.children,
       environmentProp = props.environment;
@@ -23461,6 +23478,123 @@ var HStack = /*#__PURE__*/forwardRef(function (props, ref) {
   }));
 });
 
+function _slicedToArray$i(arr, i) { return _arrayWithHoles$i(arr) || _iterableToArrayLimit$i(arr, i) || _unsupportedIterableToArray$k(arr, i) || _nonIterableRest$i(); }
+
+function _nonIterableRest$i() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray$k(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$k(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$k(o, minLen); }
+
+function _arrayLikeToArray$k(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit$i(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles$i(arr) { if (Array.isArray(arr)) return arr; }
+function createMediaQueries(breakpoints) {
+  return Object.entries(breakpoints) // sort css units in ascending order to ensure media queries are generated
+  // in the correct order and reference to each other correctly aswell
+  .sort(function (a, b) {
+    return Number.parseInt(a[1], 10) > Number.parseInt(b[1], 10) ? 1 : -1;
+  }).map(function (_ref, index, arr) {
+    var _ref2 = _slicedToArray$i(_ref, 2),
+        breakpoint = _ref2[0],
+        minWidth = _ref2[1]; // given a following breakpoint
+
+
+    var next = arr[index + 1]; // this breakpoint must end prior the threshold of the next
+
+    var maxWidth = next ? next[1] : undefined;
+    var query = createMediaQueryString(minWidth, maxWidth);
+    return {
+      minWidth: minWidth,
+      maxWidth: maxWidth,
+      breakpoint: breakpoint,
+      query: query
+    };
+  });
+}
+/**
+ * Create a media query string from the breakpoints,
+ * using a combination of `min-width` and `max-width`.
+ */
+
+function createMediaQueryString(minWidth, maxWidth) {
+  var hasMinWidth = parseInt(minWidth, 10) >= 0;
+
+  if (!hasMinWidth && !maxWidth) {
+    return "";
+  }
+
+  var query = "(min-width: " + toMediaString(minWidth) + ")";
+
+  if (!maxWidth) {
+    return query;
+  }
+
+  if (query) {
+    query += " and ";
+  }
+
+  query += "(max-width: " + toMediaString(subtract$1(maxWidth)) + ")";
+  return query;
+}
+
+var measurementRegex = /([0-9]+\.?[0-9]*)/;
+
+var calculateMeasurement = function calculateMeasurement(value, modifier) {
+  if (typeof value === "number") {
+    return "" + (value + modifier);
+  }
+
+  return value.replace(measurementRegex, function (match) {
+    return "" + (parseFloat(match) + modifier);
+  });
+};
+/**
+ * 0.01 and 0.1 are too small of a difference for `px` breakpoint values
+ *
+ * @see https://github.com/chakra-ui/chakra-ui/issues/2188#issuecomment-712774785
+ */
+
+
+function subtract$1(value) {
+  return calculateMeasurement(value, value.endsWith("px") ? -1 : -0.01);
+}
+/**
+ * Convert media query value to string
+ */
+
+
+function toMediaString(value) {
+  return isNumber(value) ? value + "px" : value;
+}
+
+function _slicedToArray$j(arr, i) { return _arrayWithHoles$j(arr) || _iterableToArrayLimit$j(arr, i) || _unsupportedIterableToArray$l(arr, i) || _nonIterableRest$j(); }
+
+function _nonIterableRest$j() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray$l(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$l(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$l(o, minLen); }
+
+function _arrayLikeToArray$l(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit$j(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles$j(arr) { if (Array.isArray(arr)) return arr; }
+
+function _objectWithoutPropertiesLoose$e(source, excluded) {
+  if (source == null) return {};
+  var target = {};
+  var sourceKeys = Object.keys(source);
+  var key, i;
+
+  for (i = 0; i < sourceKeys.length; i++) {
+    key = sourceKeys[i];
+    if (excluded.indexOf(key) >= 0) continue;
+    target[key] = source[key];
+  }
+
+  return target;
+}
+
 function _extends$y() {
   _extends$y = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
@@ -23478,8 +23612,191 @@ function _extends$y() {
 
   return _extends$y.apply(this, arguments);
 }
+/**
+ * React hook used to get the current responsive media breakpoint.
+ *
+ * @param defaultBreakpoint default breakpoint name
+ * (in non-window environments like SSR)
+ *
+ * For SSR, you can use a package like [is-mobile](https://github.com/kaimallea/isMobile)
+ * to get the default breakpoint value from the user-agent
+ */
 
-function _objectWithoutPropertiesLoose$e(source, excluded) {
+function useBreakpoint(defaultBreakpoint) {
+  var _useTheme = useTheme(),
+      breakpoints = _useTheme.breakpoints;
+
+  var env = useEnvironment();
+  var mediaQueries = react.useMemo(function () {
+    return createMediaQueries(_extends$y({
+      base: "0px"
+    }, breakpoints));
+  }, [breakpoints]);
+
+  var _React$useState = react.useState(function () {
+    if (!defaultBreakpoint) {
+      return undefined;
+    }
+
+    var mediaQuery = mediaQueries.find(function (_ref) {
+      var breakpoint = _ref.breakpoint;
+      return breakpoint === defaultBreakpoint;
+    });
+
+    if (mediaQuery) {
+      var breakpoint = _objectWithoutPropertiesLoose$e(mediaQuery, ["query"]);
+
+      return breakpoint;
+    }
+
+    return undefined;
+  }),
+      _React$useState2 = _slicedToArray$j(_React$useState, 2),
+      currentBreakpoint = _React$useState2[0],
+      setCurrentBreakpoint = _React$useState2[1];
+
+  var current = currentBreakpoint == null ? void 0 : currentBreakpoint.breakpoint;
+  var update = react.useCallback(function (query, breakpoint) {
+    if (query.matches && current !== breakpoint.breakpoint) {
+      setCurrentBreakpoint(breakpoint);
+    }
+  }, [current]);
+  react.useEffect(function () {
+    var listeners = new Set();
+    mediaQueries.forEach(function (_ref2) {
+      var query = _ref2.query,
+          breakpoint = _objectWithoutPropertiesLoose$e(_ref2, ["query"]);
+
+      var mediaQuery = env.window.matchMedia(query); // trigger an initial update to determine media query
+
+      update(mediaQuery, breakpoint);
+
+      var handleChange = function handleChange() {
+        update(mediaQuery, breakpoint);
+      }; // add media query-listener
+
+
+      mediaQuery.addListener(handleChange); // push the media query list handleChange
+      // so we can use it to remove Listener
+
+      listeners.add({
+        mediaQuery: mediaQuery,
+        handleChange: handleChange
+      });
+      return function () {
+        // clean up 1
+        mediaQuery.removeListener(handleChange);
+      };
+    });
+    return function () {
+      // clean up 2: for safety
+      listeners.forEach(function (_ref3) {
+        var mediaQuery = _ref3.mediaQuery,
+            handleChange = _ref3.handleChange;
+        mediaQuery.removeListener(handleChange);
+      });
+      listeners.clear();
+    };
+  }, [mediaQueries, breakpoints, update, env.window]);
+  return current;
+}
+
+function getClosestValue(values, breakpoint, breakpoints$1) {
+  if (breakpoints$1 === void 0) {
+    breakpoints$1 = breakpoints;
+  }
+
+  var index = Object.keys(values).indexOf(breakpoint);
+
+  if (index !== -1) {
+    return values[breakpoint];
+  }
+
+  var stopIndex = breakpoints$1.indexOf(breakpoint);
+
+  while (stopIndex >= 0) {
+    var key = breakpoints$1[stopIndex];
+
+    if (values[key] != null) {
+      index = stopIndex;
+      break;
+    }
+
+    stopIndex -= 1;
+  }
+
+  if (index !== -1) {
+    var _key = breakpoints$1[index];
+    return values[_key];
+  }
+
+  return undefined;
+}
+
+function _slicedToArray$k(arr, i) { return _arrayWithHoles$k(arr) || _iterableToArrayLimit$k(arr, i) || _unsupportedIterableToArray$m(arr, i) || _nonIterableRest$k(); }
+
+function _nonIterableRest$k() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray$m(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$m(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$m(o, minLen); }
+
+function _arrayLikeToArray$m(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit$k(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles$k(arr) { if (Array.isArray(arr)) return arr; }
+/**
+ * React hook for getting the value for the current breakpoint from the
+ * provided responsive values object.
+ *
+ * @param values
+ * @param defaultBreakpoint default breakpoint name
+ * (in non-window environments like SSR)
+ *
+ * For SSR, you can use a package like [is-mobile](https://github.com/kaimallea/isMobile)
+ * to get the default breakpoint value from the user-agent
+ *
+ * @example
+ * const width = useBreakpointValue({ base: '150px', md: '250px' })
+ */
+
+function useBreakpointValue(values, defaultBreakpoint) {
+  var breakpoint = useBreakpoint(defaultBreakpoint);
+  var theme = useTheme();
+  if (!breakpoint) return undefined;
+  /**
+   * Get the non-number breakpoint keys from the provided breakpoints
+   */
+
+  var breakpoints = Object.keys(theme.breakpoints);
+  var obj = isArray(values) ? fromEntries(Object.entries(arrayToObjectNotation(values, breakpoints)).map(function (_ref) {
+    var _ref2 = _slicedToArray$k(_ref, 2),
+        key = _ref2[0],
+        value = _ref2[1];
+
+    return [key, value];
+  })) : values;
+  return getClosestValue(obj, breakpoint, breakpoints);
+}
+
+function _extends$z() {
+  _extends$z = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  return _extends$z.apply(this, arguments);
+}
+
+function _objectWithoutPropertiesLoose$f(source, excluded) {
   if (source == null) return {};
   var target = {};
   var sourceKeys = Object.keys(source);
@@ -23498,11 +23815,11 @@ var Table$1 = /*#__PURE__*/forwardRef(function (props, ref) {
 
   var _omitThemingProps = omitThemingProps(props),
       className = _omitThemingProps.className,
-      tableProps = _objectWithoutPropertiesLoose$e(_omitThemingProps, ["className"]);
+      tableProps = _objectWithoutPropertiesLoose$f(_omitThemingProps, ["className"]);
 
   return /*#__PURE__*/react.createElement(StylesProvider, {
     value: styles
-  }, /*#__PURE__*/react.createElement(chakra.table, _extends$y({
+  }, /*#__PURE__*/react.createElement(chakra.table, _extends$z({
     role: "table",
     ref: ref,
     __css: styles.table,
@@ -23512,24 +23829,24 @@ var Table$1 = /*#__PURE__*/forwardRef(function (props, ref) {
 
 var Thead = /*#__PURE__*/forwardRef(function (props, ref) {
   var styles = useStyles();
-  return /*#__PURE__*/react.createElement(chakra.thead, _extends$y({}, props, {
+  return /*#__PURE__*/react.createElement(chakra.thead, _extends$z({}, props, {
     ref: ref,
     __css: styles.thead
   }));
 });
 var Tbody = /*#__PURE__*/forwardRef(function (props, ref) {
   var styles = useStyles();
-  return /*#__PURE__*/react.createElement(chakra.tbody, _extends$y({}, props, {
+  return /*#__PURE__*/react.createElement(chakra.tbody, _extends$z({}, props, {
     ref: ref,
     __css: styles.tbody
   }));
 });
 var Th = /*#__PURE__*/forwardRef(function (_ref2, ref) {
   var isNumeric = _ref2.isNumeric,
-      rest = _objectWithoutPropertiesLoose$e(_ref2, ["isNumeric"]);
+      rest = _objectWithoutPropertiesLoose$f(_ref2, ["isNumeric"]);
 
   var styles = useStyles();
-  return /*#__PURE__*/react.createElement(chakra.th, _extends$y({}, rest, {
+  return /*#__PURE__*/react.createElement(chakra.th, _extends$z({}, rest, {
     ref: ref,
     __css: styles.th,
     "data-is-numeric": isNumeric
@@ -23537,7 +23854,7 @@ var Th = /*#__PURE__*/forwardRef(function (_ref2, ref) {
 });
 var Tr = /*#__PURE__*/forwardRef(function (props, ref) {
   var styles = useStyles();
-  return /*#__PURE__*/react.createElement(chakra.tr, _extends$y({
+  return /*#__PURE__*/react.createElement(chakra.tr, _extends$z({
     role: "row"
   }, props, {
     ref: ref,
@@ -23546,10 +23863,10 @@ var Tr = /*#__PURE__*/forwardRef(function (props, ref) {
 });
 var Td = /*#__PURE__*/forwardRef(function (_ref3, ref) {
   var isNumeric = _ref3.isNumeric,
-      rest = _objectWithoutPropertiesLoose$e(_ref3, ["isNumeric"]);
+      rest = _objectWithoutPropertiesLoose$f(_ref3, ["isNumeric"]);
 
   var styles = useStyles();
-  return /*#__PURE__*/react.createElement(chakra.td, _extends$y({
+  return /*#__PURE__*/react.createElement(chakra.td, _extends$z({
     role: "gridcell"
   }, rest, {
     ref: ref,
@@ -25221,8 +25538,8 @@ var createPopper = /*#__PURE__*/popperGenerator({
 
 function _typeof$a(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof$a = function _typeof(obj) { return typeof obj; }; } else { _typeof$a = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof$a(obj); }
 
-function _extends$z() {
-  _extends$z = Object.assign || function (target) {
+function _extends$A() {
+  _extends$A = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -25236,7 +25553,7 @@ function _extends$z() {
     return target;
   };
 
-  return _extends$z.apply(this, arguments);
+  return _extends$A.apply(this, arguments);
 }
 
 var toVar = function toVar(value, fallback) {
@@ -25287,7 +25604,7 @@ function getEventListenerOptions(value) {
   if (_typeof$a(value) === "object") {
     eventListeners = {
       enabled: true,
-      options: _extends$z({}, defaultEventListeners, value)
+      options: _extends$A({}, defaultEventListeners, value)
     };
   } else {
     eventListeners = {
@@ -25451,19 +25768,19 @@ var setInnerArrowStyles = function setInnerArrowStyles(state) {
   });
 };
 
-function _toConsumableArray$4(arr) { return _arrayWithoutHoles$4(arr) || _iterableToArray$6(arr) || _unsupportedIterableToArray$k(arr) || _nonIterableSpread$4(); }
+function _toConsumableArray$4(arr) { return _arrayWithoutHoles$4(arr) || _iterableToArray$6(arr) || _unsupportedIterableToArray$n(arr) || _nonIterableSpread$4(); }
 
 function _nonIterableSpread$4() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
-function _unsupportedIterableToArray$k(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$k(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$k(o, minLen); }
+function _unsupportedIterableToArray$n(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$n(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$n(o, minLen); }
 
 function _iterableToArray$6(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
 
-function _arrayWithoutHoles$4(arr) { if (Array.isArray(arr)) return _arrayLikeToArray$k(arr); }
+function _arrayWithoutHoles$4(arr) { if (Array.isArray(arr)) return _arrayLikeToArray$n(arr); }
 
-function _arrayLikeToArray$k(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+function _arrayLikeToArray$n(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-function _objectWithoutPropertiesLoose$f(source, excluded) {
+function _objectWithoutPropertiesLoose$g(source, excluded) {
   if (source == null) return {};
   var target = {};
   var sourceKeys = Object.keys(source);
@@ -25478,8 +25795,8 @@ function _objectWithoutPropertiesLoose$f(source, excluded) {
   return target;
 }
 
-function _extends$A() {
-  _extends$A = Object.assign || function (target) {
+function _extends$B() {
+  _extends$B = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -25493,7 +25810,7 @@ function _extends$A() {
     return target;
   };
 
-  return _extends$A.apply(this, arguments);
+  return _extends$B.apply(this, arguments);
 }
 function usePopper(props) {
   if (props === void 0) {
@@ -25533,9 +25850,9 @@ function usePopper(props) {
     cleanup.current == null ? void 0 : cleanup.current();
     instance.current = createPopper(reference.current, popper.current, {
       placement: placementProp,
-      modifiers: [innerArrow, positionArrow, transformOrigin, _extends$A({}, matchWidth, {
+      modifiers: [innerArrow, positionArrow, transformOrigin, _extends$B({}, matchWidth, {
         enabled: !!matchWidth$1
-      }), _extends$A({
+      }), _extends$B({
         name: "eventListeners"
       }, getEventListenerOptions(eventListeners)), {
         name: "arrow",
@@ -25593,7 +25910,7 @@ function usePopper(props) {
       ref = null;
     }
 
-    return _extends$A({}, props, {
+    return _extends$B({}, props, {
       ref: mergeRefs(referenceRef, ref)
     });
   }, [referenceRef]);
@@ -25610,9 +25927,9 @@ function usePopper(props) {
       ref = null;
     }
 
-    return _extends$A({}, props, {
+    return _extends$B({}, props, {
       ref: mergeRefs(popperRef, ref),
-      style: _extends$A({}, props.style, {
+      style: _extends$B({}, props.style, {
         position: strategy,
         minWidth: "max-content",
         inset: "0 auto auto 0"
@@ -25628,9 +25945,9 @@ function usePopper(props) {
       ref = null;
     }
 
-    var rest = _objectWithoutPropertiesLoose$f(props, ["size", "shadowColor", "bg", "style"]);
+    var rest = _objectWithoutPropertiesLoose$g(props, ["size", "shadowColor", "bg", "style"]);
 
-    return _extends$A({}, rest, {
+    return _extends$B({}, rest, {
       ref: ref,
       "data-popper-arrow": "",
       style: getArrowStyle$1(props)
@@ -25645,7 +25962,7 @@ function usePopper(props) {
       ref = null;
     }
 
-    return _extends$A({}, props, {
+    return _extends$B({}, props, {
       ref: ref,
       "data-popper-arrow-inner": ""
     });
@@ -25677,7 +25994,7 @@ function getArrowStyle$1(props) {
       bg = props.bg,
       style = props.style;
 
-  var computedStyle = _extends$A({}, style, {
+  var computedStyle = _extends$B({}, style, {
     position: "absolute"
   });
 
@@ -25770,8 +26087,8 @@ var propTypes = createCommonjsModule(function (module) {
 }
 });
 
-function _extends$B() {
-  _extends$B = Object.assign || function (target) {
+function _extends$C() {
+  _extends$C = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -25785,10 +26102,10 @@ function _extends$B() {
     return target;
   };
 
-  return _extends$B.apply(this, arguments);
+  return _extends$C.apply(this, arguments);
 }
 
-function _objectWithoutPropertiesLoose$g(source, excluded) {
+function _objectWithoutPropertiesLoose$h(source, excluded) {
   if (source == null) return {};
   var target = {};
   var sourceKeys = Object.keys(source);
@@ -25815,11 +26132,11 @@ var VisuallyHidden$1 = /*#__PURE__*/react.forwardRef(function VisuallyHidden(_re
       Comp = _ref$as === void 0 ? "span" : _ref$as,
       _ref$style = _ref.style,
       style = _ref$style === void 0 ? {} : _ref$style,
-      props = _objectWithoutPropertiesLoose$g(_ref, ["as", "style"]);
+      props = _objectWithoutPropertiesLoose$h(_ref, ["as", "style"]);
 
-  return /*#__PURE__*/react.createElement(Comp, _extends$B({
+  return /*#__PURE__*/react.createElement(Comp, _extends$C({
     ref: ref,
-    style: _extends$B({
+    style: _extends$C({
       border: 0,
       clip: "rect(0 0 0 0)",
       height: "1px",
@@ -25937,8 +26254,8 @@ function usePrevious(value) {
   return ref.current;
 }
 
-function _extends$C() {
-  _extends$C = Object.assign || function (target) {
+function _extends$D() {
+  _extends$D = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -25952,10 +26269,10 @@ function _extends$C() {
     return target;
   };
 
-  return _extends$C.apply(this, arguments);
+  return _extends$D.apply(this, arguments);
 }
 
-function _objectWithoutPropertiesLoose$h(source, excluded) {
+function _objectWithoutPropertiesLoose$i(source, excluded) {
   if (source == null) return {};
   var target = {};
   var sourceKeys = Object.keys(source);
@@ -26005,12 +26322,12 @@ var Alert$2 = /*#__PURE__*/forwardRefWithAs(function Alert(_ref, forwardedRef) {
       children = _ref.children,
       _ref$type = _ref.type,
       regionType = _ref$type === void 0 ? "polite" : _ref$type,
-      props = _objectWithoutPropertiesLoose$h(_ref, ["as", "children", "type"]);
+      props = _objectWithoutPropertiesLoose$i(_ref, ["as", "children", "type"]);
 
   var ownRef = react.useRef(null);
   var ref = useForkedRef(forwardedRef, ownRef);
   var child = react.useMemo(function () {
-    return /*#__PURE__*/react.createElement(Comp, _extends$C({}, props, {
+    return /*#__PURE__*/react.createElement(Comp, _extends$D({}, props, {
       ref: ref,
       "data-reach-alert": true
     }), children);
@@ -26163,17 +26480,17 @@ function getToastStyle(position) {
   };
 }
 
-function _slicedToArray$i(arr, i) { return _arrayWithHoles$i(arr) || _iterableToArrayLimit$i(arr, i) || _unsupportedIterableToArray$l(arr, i) || _nonIterableRest$i(); }
+function _slicedToArray$l(arr, i) { return _arrayWithHoles$l(arr) || _iterableToArrayLimit$l(arr, i) || _unsupportedIterableToArray$o(arr, i) || _nonIterableRest$l(); }
 
-function _nonIterableRest$i() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _nonIterableRest$l() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
-function _unsupportedIterableToArray$l(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$l(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$l(o, minLen); }
+function _unsupportedIterableToArray$o(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$o(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$o(o, minLen); }
 
-function _arrayLikeToArray$l(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+function _arrayLikeToArray$o(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-function _iterableToArrayLimit$i(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+function _iterableToArrayLimit$l(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
-function _arrayWithHoles$i(arr) { if (Array.isArray(arr)) return arr; }
+function _arrayWithHoles$l(arr) { if (Array.isArray(arr)) return arr; }
 
 function _defineProperty$8(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 /**
@@ -26236,7 +26553,7 @@ var Toast = function Toast(props) {
       duration = _props$duration === void 0 ? 5000 : _props$duration;
 
   var _React$useState = react.useState(duration),
-      _React$useState2 = _slicedToArray$i(_React$useState, 2),
+      _React$useState2 = _slicedToArray$l(_React$useState, 2),
       delay = _React$useState2[0],
       setDelay = _React$useState2[1];
 
@@ -26302,17 +26619,17 @@ function _typeof$b(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "func
 
 function _defineProperty2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-function _toConsumableArray$5(arr) { return _arrayWithoutHoles$5(arr) || _iterableToArray$7(arr) || _unsupportedIterableToArray$m(arr) || _nonIterableSpread$5(); }
+function _toConsumableArray$5(arr) { return _arrayWithoutHoles$5(arr) || _iterableToArray$7(arr) || _unsupportedIterableToArray$p(arr) || _nonIterableSpread$5(); }
 
 function _nonIterableSpread$5() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
-function _unsupportedIterableToArray$m(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$m(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$m(o, minLen); }
+function _unsupportedIterableToArray$p(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$p(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$p(o, minLen); }
 
 function _iterableToArray$7(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
 
-function _arrayWithoutHoles$5(arr) { if (Array.isArray(arr)) return _arrayLikeToArray$m(arr); }
+function _arrayWithoutHoles$5(arr) { if (Array.isArray(arr)) return _arrayLikeToArray$p(arr); }
 
-function _arrayLikeToArray$m(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+function _arrayLikeToArray$p(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -26334,8 +26651,8 @@ function _isNativeReflectConstruct$1() { if (typeof Reflect === "undefined" || !
 
 function _getPrototypeOf$1(o) { _getPrototypeOf$1 = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf$1(o); }
 
-function _extends$D() {
-  _extends$D = Object.assign || function (target) {
+function _extends$E() {
+  _extends$E = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -26349,7 +26666,7 @@ function _extends$D() {
     return target;
   };
 
-  return _extends$D.apply(this, arguments);
+  return _extends$E.apply(this, arguments);
 }
 
 function _defineProperty$9(obj, key, value) {
@@ -26420,7 +26737,7 @@ var ToastManager = /*#__PURE__*/function (_React$Component) {
          */
 
         var toasts = isTop ? [toast].concat(_toConsumableArray$5(prevToasts[position])) : [].concat(_toConsumableArray$5(prevToasts[position]), [toast]);
-        return _extends$D({}, prevToasts, _defineProperty2({}, position, toasts));
+        return _extends$E({}, prevToasts, _defineProperty2({}, position, toasts));
       });
 
       return id;
@@ -26428,14 +26745,14 @@ var ToastManager = /*#__PURE__*/function (_React$Component) {
 
     _defineProperty$9(_assertThisInitialized(_this2), "updateToast", function (id, options) {
       _this2.setState(function (prevState) {
-        var nextState = _extends$D({}, prevState);
+        var nextState = _extends$E({}, prevState);
 
         var _findToast = findToast(nextState, id),
             position = _findToast.position,
             index = _findToast.index;
 
         if (position && index !== -1) {
-          nextState[position][index] = _extends$D({}, nextState[position][index], options);
+          nextState[position][index] = _extends$E({}, nextState[position][index], options);
         }
 
         return nextState;
@@ -26453,7 +26770,7 @@ var ToastManager = /*#__PURE__*/function (_React$Component) {
         var positionsToClose = positions != null ? positions : allPositions;
         return positionsToClose.reduce(function (acc, position) {
           acc[position] = prev[position].map(function (toast) {
-            return _extends$D({}, toast, {
+            return _extends$E({}, toast, {
               requestClose: true
             });
           });
@@ -26486,11 +26803,11 @@ var ToastManager = /*#__PURE__*/function (_React$Component) {
       _this2.setState(function (prevState) {
         var position = getToastPosition(prevState, id);
         if (!position) return prevState;
-        return _extends$D({}, prevState, _defineProperty2({}, position, prevState[position].map(function (toast) {
+        return _extends$E({}, prevState, _defineProperty2({}, position, prevState[position].map(function (toast) {
           // id may be string or number
           // eslint-disable-next-line eqeqeq
           if (toast.id == id) {
-            return _extends$D({}, toast, {
+            return _extends$E({}, toast, {
               requestClose: true
             });
           }
@@ -26502,7 +26819,7 @@ var ToastManager = /*#__PURE__*/function (_React$Component) {
 
     _defineProperty$9(_assertThisInitialized(_this2), "removeToast", function (id, position) {
       _this2.setState(function (prevState) {
-        return _extends$D({}, prevState, _defineProperty2({}, position, prevState[position].filter(function (toast) {
+        return _extends$E({}, prevState, _defineProperty2({}, position, prevState[position].filter(function (toast) {
           return toast.id != id;
         })));
       });
@@ -26566,7 +26883,7 @@ var ToastManager = /*#__PURE__*/function (_React$Component) {
         }, /*#__PURE__*/react.createElement(AnimatePresence, {
           initial: false
         }, toasts.map(function (toast) {
-          return /*#__PURE__*/react.createElement(Toast, _extends$D({
+          return /*#__PURE__*/react.createElement(Toast, _extends$E({
             key: toast.id
           }, toast));
         })));
@@ -26688,8 +27005,8 @@ function Toaster() {
 
 var toast = new Toaster();
 
-function _extends$E() {
-  _extends$E = Object.assign || function (target) {
+function _extends$F() {
+  _extends$F = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -26703,7 +27020,7 @@ function _extends$E() {
     return target;
   };
 
-  return _extends$E.apply(this, arguments);
+  return _extends$F.apply(this, arguments);
 }
 
 var Toast$1 = function Toast(props) {
@@ -26776,11 +27093,11 @@ function createStandaloneToast(_temp) {
         setColorMode: setColorMode,
         toggleColorMode: toggleColorMode
       }
-    }, isFunction(options.render) ? options.render(props) : /*#__PURE__*/react.createElement(Toast$1, _extends$E({}, props, options))));
+    }, isFunction(options.render) ? options.render(props) : /*#__PURE__*/react.createElement(Toast$1, _extends$F({}, props, options))));
   };
 
   var toastImpl = function toastImpl(options) {
-    var opts = _extends$E({}, defaultOptions, options);
+    var opts = _extends$F({}, defaultOptions, options);
 
     var Message = function Message(props) {
       return renderWithProviders(props, opts);
@@ -26795,9 +27112,9 @@ function createStandaloneToast(_temp) {
   toastImpl.update = function (id, options) {
     if (!id) return;
 
-    var opts = _extends$E({}, defaultOptions, options);
+    var opts = _extends$F({}, defaultOptions, options);
 
-    toast.update(id, _extends$E({}, opts, {
+    toast.update(id, _extends$F({}, opts, {
       message: function message(props) {
         return renderWithProviders(props, opts);
       }
@@ -26863,8 +27180,8 @@ var scale$1 = {
 
 function _defineProperty$b(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-function _extends$F() {
-  _extends$F = Object.assign || function (target) {
+function _extends$G() {
+  _extends$G = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -26878,10 +27195,10 @@ function _extends$F() {
     return target;
   };
 
-  return _extends$F.apply(this, arguments);
+  return _extends$G.apply(this, arguments);
 }
 
-function _objectWithoutPropertiesLoose$i(source, excluded) {
+function _objectWithoutPropertiesLoose$j(source, excluded) {
   if (source == null) return {};
   var target = {};
   var sourceKeys = Object.keys(source);
@@ -26922,7 +27239,7 @@ function useTooltip(props) {
       isDisabled = _props.isDisabled,
       gutter = _props.gutter,
       offset = _props.offset,
-      htmlProps = _objectWithoutPropertiesLoose$i(props, ["openDelay", "closeDelay", "closeOnClick", "closeOnMouseDown", "onOpen", "onClose", "placement", "id", "isOpen", "defaultIsOpen", "arrowSize", "arrowShadowColor", "arrowPadding", "modifiers", "isDisabled", "gutter", "offset"]);
+      htmlProps = _objectWithoutPropertiesLoose$j(props, ["openDelay", "closeDelay", "closeOnClick", "closeOnMouseDown", "onOpen", "onClose", "placement", "id", "isOpen", "defaultIsOpen", "arrowSize", "arrowShadowColor", "arrowPadding", "modifiers", "isDisabled", "gutter", "offset"]);
 
   var _useDisclosure = useDisclosure({
     isOpen: isOpenProp,
@@ -27004,7 +27321,7 @@ function useTooltip(props) {
       _ref = null;
     }
 
-    var triggerProps = _extends$F({}, props, {
+    var triggerProps = _extends$G({}, props, {
       ref: mergeRefs(ref, _ref, referenceRef),
       onMouseEnter: callAllHandlers(props.onMouseEnter, openWithDelay),
       onClick: callAllHandlers(props.onClick, onClick),
@@ -27027,8 +27344,8 @@ function useTooltip(props) {
       forwardedRef = null;
     }
 
-    return getPopperProps(_extends$F({}, props, {
-      style: _extends$F({}, props.style, (_extends2 = {}, _defineProperty$b(_extends2, cssVars.arrowSize["var"], arrowSize ? px(arrowSize) : undefined), _defineProperty$b(_extends2, cssVars.arrowShadowColor["var"], arrowShadowColor), _extends2))
+    return getPopperProps(_extends$G({}, props, {
+      style: _extends$G({}, props.style, (_extends2 = {}, _defineProperty$b(_extends2, cssVars.arrowSize["var"], arrowSize ? px(arrowSize) : undefined), _defineProperty$b(_extends2, cssVars.arrowShadowColor["var"], arrowShadowColor), _extends2))
     }), forwardedRef);
   }, [getPopperProps, arrowSize, arrowShadowColor]);
   var getTooltipProps = react.useCallback(function (props, _ref) {
@@ -27040,12 +27357,12 @@ function useTooltip(props) {
       _ref = null;
     }
 
-    var tooltipProps = _extends$F({
+    var tooltipProps = _extends$G({
       ref: _ref
     }, htmlProps, props, {
       id: tooltipId,
       role: "tooltip",
-      style: _extends$F({}, props.style, {
+      style: _extends$G({}, props.style, {
         position: "relative",
         transformOrigin: cssVars.transformOrigin.varRef
       })
@@ -27065,8 +27382,8 @@ function useTooltip(props) {
   };
 }
 
-function _extends$G() {
-  _extends$G = Object.assign || function (target) {
+function _extends$H() {
+  _extends$H = Object.assign || function (target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = arguments[i];
 
@@ -27080,10 +27397,10 @@ function _extends$G() {
     return target;
   };
 
-  return _extends$G.apply(this, arguments);
+  return _extends$H.apply(this, arguments);
 }
 
-function _objectWithoutPropertiesLoose$j(source, excluded) {
+function _objectWithoutPropertiesLoose$k(source, excluded) {
   if (source == null) return {};
   var target = {};
   var sourceKeys = Object.keys(source);
@@ -27117,7 +27434,7 @@ var Tooltip$1 = /*#__PURE__*/forwardRef(function (props, ref) {
       hasArrow = ownProps.hasArrow,
       bg = ownProps.bg,
       portalProps = ownProps.portalProps,
-      rest = _objectWithoutPropertiesLoose$j(ownProps, ["children", "label", "shouldWrapChildren", "aria-label", "hasArrow", "bg", "portalProps"]);
+      rest = _objectWithoutPropertiesLoose$k(ownProps, ["children", "label", "shouldWrapChildren", "aria-label", "hasArrow", "bg", "portalProps"]);
 
   if (bg) {
     styles.bg = bg;
@@ -27129,7 +27446,7 @@ var Tooltip$1 = /*#__PURE__*/forwardRef(function (props, ref) {
   var trigger;
 
   if (shouldWrap) {
-    trigger = /*#__PURE__*/react.createElement(chakra.span, _extends$G({
+    trigger = /*#__PURE__*/react.createElement(chakra.span, _extends$H({
       tabIndex: 0
     }, tooltip.getTriggerProps()), children);
   } else {
@@ -27155,12 +27472,12 @@ var Tooltip$1 = /*#__PURE__*/forwardRef(function (props, ref) {
     return /*#__PURE__*/react.createElement(react.Fragment, null, children);
   }
 
-  return /*#__PURE__*/react.createElement(react.Fragment, null, trigger, /*#__PURE__*/react.createElement(AnimatePresence, null, tooltip.isOpen && /*#__PURE__*/react.createElement(Portal$1, portalProps, /*#__PURE__*/react.createElement(chakra.div, _extends$G({}, tooltip.getTooltipPositionerProps(), {
+  return /*#__PURE__*/react.createElement(react.Fragment, null, trigger, /*#__PURE__*/react.createElement(AnimatePresence, null, tooltip.isOpen && /*#__PURE__*/react.createElement(Portal$1, portalProps, /*#__PURE__*/react.createElement(chakra.div, _extends$H({}, tooltip.getTooltipPositionerProps(), {
     __css: {
       zIndex: styles.zIndex,
       pointerEvents: "none"
     }
-  }), /*#__PURE__*/react.createElement(StyledTooltip, _extends$G({
+  }), /*#__PURE__*/react.createElement(StyledTooltip, _extends$H({
     variants: scale$1
   }, tooltipProps, {
     initial: "exit",
@@ -27179,4 +27496,4 @@ var Tooltip$1 = /*#__PURE__*/forwardRef(function (props, ref) {
   })))))));
 });
 
-export { Box, Button$1 as Button, ChakraProvider, Flex, FormControl, HStack, Heading$1 as Heading, Input$1 as Input, Table$1 as Table, Tbody, Td, Th, Thead, Tooltip$1 as Tooltip, Tr, useToast };
+export { Box, Button$1 as Button, ChakraProvider, Flex, FormControl, HStack, Heading$1 as Heading, Input$1 as Input, Table$1 as Table, Tbody, Td, Th, Thead, Tooltip$1 as Tooltip, Tr, useBreakpointValue, useToast };

@@ -22,11 +22,10 @@ function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Sy
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-import produce from "../../../snowpack/pkg/immer.js";
 import { nanoid } from "../../../snowpack/pkg/nanoid.js";
 import Peer from "../../../snowpack/pkg/peerjs.js";
 import { useEffect, useRef, useState } from "../../../snowpack/pkg/react.js";
-import { shareMyPeerData } from "./actions/shareMyPeerData.js";
+import { handleShareMyPeerData, shareMyPeerData } from "./actions/shareMyPeerData.js";
 import { sharePeers } from "./actions/sharePeers.js";
 import { PeerActions } from "./types.js";
 
@@ -150,6 +149,7 @@ var usePeerConnections = function usePeerConnections(props) {
   var handleConnectionData = function handleConnectionData(conn, data) {
     console.log("[".concat(conn.peer, "]: ").concat(data));
     var action = JSON.parse(data);
+    var state = getState();
 
     switch (action.type) {
       case PeerActions.SHARE_PEERS:
@@ -167,36 +167,13 @@ var usePeerConnections = function usePeerConnections(props) {
         }
 
       case PeerActions.SHARE_MY_PEER_DATA:
-        {
-          var _ref2 = action,
-              senderId = _ref2.senderId,
-              _data = _ref2.data;
-
-          var latestState = _objectSpread({}, getState());
-
-          var latestPeerIndex = latestState.peers.findIndex(function (p) {
-            return p.connection.peer === senderId;
-          });
-
-          if (latestPeerIndex !== -1) {
-            latestState.peers[latestPeerIndex].name = _data.name;
-            props.onConnectionOpen && props.onConnectionOpen(conn, latestState);
-          }
-
-          setPeers(function (latest) {
-            return produce(latest, function (draft) {
-              var peerIndex = draft.findIndex(function (p) {
-                return p.connection.peer === senderId;
-              });
-              if (peerIndex === -1) return;
-              draft[peerIndex] = _objectSpread(_objectSpread({}, draft[peerIndex]), _data);
-            });
-          });
-          return;
-        }
+        var onConnectionOpen = props.onConnectionOpen ? function () {
+          return props.onConnectionOpen(conn, state);
+        } : undefined;
+        handleShareMyPeerData(action, state, onConnectionOpen);
     }
 
-    props.onPeerAction && props.onPeerAction(action, getState());
+    props.onPeerAction && props.onPeerAction(action, state);
   };
 
   var handleConnectionClose = function handleConnectionClose(conn) {
