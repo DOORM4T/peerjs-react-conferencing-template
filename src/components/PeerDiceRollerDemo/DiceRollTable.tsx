@@ -1,6 +1,6 @@
 import { Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react"
 import React from "react"
-import { IMyPeer, IPeerConnection, IPeerData } from "./types"
+import { IMyPeer, IPeerConnection, IPeerData } from "../PeerContainer/types"
 
 const ConnectionsTable = (props: {
   myPeer: IPeerData & IMyPeer

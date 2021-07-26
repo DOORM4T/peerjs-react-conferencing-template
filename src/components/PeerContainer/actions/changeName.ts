@@ -4,23 +4,39 @@ import {
   IPeerConnection,
   IPeerData,
   IPeerState,
-  PeerActions
+  PeerActions,
 } from "../types"
+import { isMyPeerValid } from "../utils"
 
 export interface IChangeNameAction extends IPeerAction {
   type: PeerActions.CHANGE_NAME
   name: string
 }
-export function changeName(senderId: string, name: string): IChangeNameAction {
+function _changeName(senderId: string, name: string): IChangeNameAction {
   return { type: PeerActions.CHANGE_NAME, senderId, name }
 }
 
 export function handlePeerNameChange(action: IPeerAction, state: IPeerState) {
   const { senderId, name } = action as IChangeNameAction
-  state.setPeers((latest) => updatePeers(senderId, name, latest))
+  state.setPeers((latest) => _updatePeers(senderId, name, latest))
 }
 
-function updatePeers(
+export const useHandleNameChange = (props: IPeerState) => {
+  const { setMyPeer, myPeer, peers } = props
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isMyPeerValid(myPeer)) return
+    const value = e.currentTarget.value
+    setMyPeer((latest) => ({ ...latest!, name: value }))
+    const changeNameAction = JSON.stringify(
+      _changeName(myPeer!.peerObj.id, value),
+    )
+    peers.forEach((p) => p.connection.send(changeNameAction))
+  }
+  return { handleNameChange }
+}
+
+function _updatePeers(
   senderId: string,
   name: string,
   peers: (IPeerConnection & IPeerData)[],

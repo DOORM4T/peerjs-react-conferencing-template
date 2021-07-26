@@ -1,10 +1,9 @@
-import produce from "immer"
 import { nanoid } from "nanoid"
 import Peer from "peerjs"
 import { useEffect, useRef, useState } from "react"
 import {
-  IShareMyPeerDataAction,
-  shareMyPeerData
+  handleShareMyPeerData,
+  shareMyPeerData,
 } from "./actions/shareMyPeerData"
 import { ISharePeersAction, sharePeers } from "./actions/sharePeers"
 import {
@@ -15,7 +14,7 @@ import {
   IPeerConnection,
   IPeerData,
   IPeerState,
-  PeerActions
+  PeerActions,
 } from "./types"
 
 interface IProps {
@@ -117,8 +116,8 @@ const usePeerConnections = (props: IProps) => {
 
     // The following line extracts ONLY IPeerData fields. IMyPeer type fields like peerObj won't be used here.
     // This prevents JSON stringify circular structure bugs, which can prevent new peers from seeing shared data upon connecting
-    const {peerObj : _, ...myPeerData} = { ...latestMyPeer.current } 
-    
+    const { peerObj: _, ...myPeerData } = { ...latestMyPeer.current }
+
     const shareMyPeerDataAction = JSON.stringify(
       shareMyPeerData(myId, myPeerData),
     )
@@ -130,6 +129,8 @@ const usePeerConnections = (props: IProps) => {
     console.log(`[${conn.peer}]: ${data}`)
 
     const action = JSON.parse(data) as IPeerAction
+    const state = getState()
+
     switch (action.type) {
       case PeerActions.SHARE_PEERS: {
         const { peers } = action as ISharePeersAction
@@ -141,31 +142,14 @@ const usePeerConnections = (props: IProps) => {
         return
       }
 
-      case PeerActions.SHARE_MY_PEER_DATA: {
-        const { senderId, data } = action as IShareMyPeerDataAction
-        const latestState: IPeerState = { ...getState() }
-        const latestPeerIndex = latestState.peers.findIndex(
-          (p) => p.connection.peer === senderId,
-        )
-        if (latestPeerIndex !== -1) {
-          latestState.peers[latestPeerIndex].name = data.name
-          props.onConnectionOpen && props.onConnectionOpen(conn, latestState)
-        }
-
-        setPeers((latest) =>
-          produce(latest, (draft) => {
-            const peerIndex = draft.findIndex(
-              (p) => p.connection.peer === senderId,
-            )
-            if (peerIndex === -1) return
-            draft[peerIndex] = { ...draft[peerIndex], ...data }
-          }),
-        )
-        return
-      }
+      case PeerActions.SHARE_MY_PEER_DATA:
+        const onConnectionOpen = props.onConnectionOpen
+          ? () => props.onConnectionOpen!(conn, state)
+          : undefined
+        handleShareMyPeerData(action, state, onConnectionOpen)
     }
 
-    props.onPeerAction && props.onPeerAction(action, getState())
+    props.onPeerAction && props.onPeerAction(action, state)
   }
 
   const handleConnectionClose = (conn: Peer.DataConnection) => {
